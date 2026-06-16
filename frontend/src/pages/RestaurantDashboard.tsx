@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  TrendingUp, 
-  Clipboard, 
-  AlertTriangle, 
-  DollarSign, 
-  Utensils 
+import {
+  TrendingUp,
+  Clipboard,
+  AlertTriangle,
+  DollarSign,
+  Utensils
 } from 'lucide-react';
 
 export const RestaurantDashboard: React.FC = () => {
@@ -143,7 +143,7 @@ export const RestaurantDashboard: React.FC = () => {
 
       {/* Tables Breakdown and Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Table Status breakdown */}
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-extrabold text-slate-800 text-lg mb-4">Table Capacity & status</h3>
@@ -201,7 +201,7 @@ export const RestaurantDashboard: React.FC = () => {
         {/* Online Orders Channels */}
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <h3 className="font-extrabold text-slate-800 text-lg mb-4">Online Orders Channels</h3>
-          
+
           <div className="space-y-4">
             <div className="p-4 border border-slate-100 rounded-xl bg-orange-50/20 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -251,7 +251,7 @@ export const RestaurantDashboard: React.FC = () => {
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
         <h3 className="font-extrabold text-slate-800 text-lg mb-2">Revenue Summary</h3>
         <p className="text-xs text-slate-400 font-medium mb-6">Daily sales distribution tracker across hours</p>
-        
+
         {/* Simple visual bar heights */}
         <div className="flex items-end justify-between h-48 pt-4 px-2 bg-slate-50 rounded-xl border border-slate-100/50">
           {[
@@ -269,9 +269,9 @@ export const RestaurantDashboard: React.FC = () => {
               <div className="absolute bottom-[calc(100%+5px)] bg-slate-800 text-white text-[10px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-lg whitespace-nowrap z-10">
                 {bar.amt}
               </div>
-              
-              <div 
-                style={{ height: `${bar.val}%` }} 
+
+              <div
+                style={{ height: `${bar.val}%` }}
                 className="w-8 bg-emerald-600 hover:bg-emerald-500 rounded-t-lg transition-all duration-300"
               ></div>
               <span className="text-[10px] font-bold text-slate-400 mt-2">{bar.label}</span>

@@ -88,7 +88,7 @@ export const RestaurantReports: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         {/* Table revenue */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
           <h3 className="font-extrabold text-slate-800 text-base">Table Revenue Distribution</h3>
@@ -100,8 +100,8 @@ export const RestaurantReports: React.FC = () => {
                   <span>₹{revenue?.toFixed(2)}</span>
                 </div>
                 <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div 
-                    style={{ width: `${Math.min(100, (revenue / totalSales) * 100)}%` }} 
+                  <div
+                    style={{ width: `${Math.min(100, (revenue / totalSales) * 100)}%` }}
                     className="bg-emerald-600 h-full rounded-full"
                   ></div>
                 </div>

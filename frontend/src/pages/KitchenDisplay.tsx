@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Play, 
-  Check, 
-  Trash2, 
-  UtensilsCrossed, 
-  Clock, 
-  Bell, 
-  AlertCircle 
+import {
+  Play,
+  Check,
+  Trash2,
+  UtensilsCrossed,
+  Clock,
+  Bell,
+  AlertCircle
 } from 'lucide-react';
 
 export const KitchenDisplay: React.FC = () => {
@@ -21,12 +21,12 @@ export const KitchenDisplay: React.FC = () => {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      
+
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
-      
+
       gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
       oscillator.start();
       oscillator.stop(audioCtx.currentTime + 0.15);
@@ -50,7 +50,7 @@ export const KitchenDisplay: React.FC = () => {
   const fetchOrders = async () => {
     try {
       const data = await apiRequest(`/restaurant/orders?restaurantId=${user?.restaurantId || 'mock-id'}`);
-      
+
       // Check if there is a new order to trigger sound
       if (orders.length > 0 && data.length > orders.length) {
         const hasNew = data.some((n: any) => !orders.some(o => o.id === n.id));
@@ -58,7 +58,7 @@ export const KitchenDisplay: React.FC = () => {
           playAlertSound();
         }
       }
-      
+
       setOrders(data);
     } catch (err) {
       console.warn('Utilizing KDS mock fallback data.');

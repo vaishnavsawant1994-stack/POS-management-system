@@ -34,6 +34,7 @@ export const DigitalMenuBuilder: React.FC = () => {
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemImage, setNewItemImage] = useState('');
+  const [newItemImageName, setNewItemImageName] = useState('');
   const [newItemIsChefSpecial, setNewItemIsChefSpecial] = useState(false);
   const [newItemIsRecommended, setNewItemIsRecommended] = useState(false);
   const [newItemIsOnOffer, setNewItemIsOnOffer] = useState(false);
@@ -71,71 +72,84 @@ export const DigitalMenuBuilder: React.FC = () => {
       const defaultCats = [
         { id: 'c-1', name: 'Starters', description: 'Crispy finger foods & appetizers' },
         { id: 'c-2', name: 'Soups', description: 'Freshly prepared hot soups' },
-        { id: 'c-3', name: 'Veg Main Course', description: 'Gourmet vegetarian entrees' },
-        { id: 'c-4', name: 'Non-Veg Main Course', description: 'Authentic chicken & mutton delicacies' },
+        { id: 'c-3', name: 'Main Course', description: 'Gourmet main course entrees' },
         { id: 'c-5', name: 'Sea Food', description: 'Fresh catch seafood items' },
         { id: 'c-6', name: 'Rice', description: 'Premium long grain rice & biryanis' },
         { id: 'c-7', name: 'Breads', description: 'Freshly baked tandoori rotis & naans' },
-        { id: 'c-8', name: 'Chinese', description: 'Indo-chinese delicacies' },
         { id: 'c-9', name: 'Pizza', description: 'Handmade cheese pizzas' },
         { id: 'c-10', name: 'Burgers', description: 'Juicy customized burgers' },
-        { id: 'c-11', name: 'Sandwiches', description: 'Gourmet toasted sandwiches' },
-        { id: 'c-12', name: 'Pasta', description: 'Fresh italian pastas' },
         { id: 'c-13', name: 'Desserts', description: 'Delicious sweet endings' },
-        { id: 'c-14', name: 'Ice Cream', description: 'Creamy cold ice scoops' },
-        { id: 'c-15', name: 'Beverages', description: 'Cold drinks, soda & juices' },
-        { id: 'c-16', name: 'Mocktails', description: 'Refreshing mocktails' },
-        { id: 'c-17', name: 'Combos', description: 'Value meal combinations' },
-        { id: 'c-18', name: "Today's Special", description: 'Special recipes of the day' },
-        { id: 'c-19', name: 'Chef Recommendations', description: 'Highly recommended by our chef' }
+        { id: 'c-15', name: 'Beverages', description: 'Cold drinks, soda & juices' }
       ];
 
       const defaultItems = [
-        // ================= VEG ITEMS (20 Items) =================
-        { id: 'v-1', categoryId: 'c-3', name: 'Dal Tadka', description: '[Type: Veg] Traditional yellow lentils tempered with ghee, garlic, and cumin', price: 1, isVeg: true, isChefSpecial: false, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-2', categoryId: 'c-3', name: 'Dal Khichadi', description: '[Type: Veg] Comforting rice and lentil porridge tempered with spices', price: 149, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-3', categoryId: 'c-3', name: 'Jeera Rice', description: '[Type: Veg] Aromatic basmati rice tempered with cumin seeds and coriander', price: 120, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-4', categoryId: 'c-3', name: 'Steam Basmati Rice', description: '[Type: Veg] Premium steamed long-grain basmati rice', price: 99, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=400&h=300&q=80' },
+        // ================= STARTERS (c-1 - 20 Items) =================
+        { id: 'st-1', categoryId: 'c-1', name: 'Paneer Tikka', description: '[Type: Veg] Grilled cottage cheese cubes marinated in tandoori spices', price: 180, isVeg: true, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-2', categoryId: 'c-1', name: 'Veg Crispy', description: '[Type: Veg] Batter fried crispy mixed vegetables tossed in tangy sauce', price: 160, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-3', categoryId: 'c-1', name: 'Hara Bhara Kabab', description: '[Type: Veg] Delicate patties of spinach, green peas, and potatoes', price: 150, isVeg: true, isChefSpecial: false, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-4', categoryId: 'c-1', name: 'Chicken Tikka', description: '[Type: Non-Veg] Clay oven roasted tender chicken chunks in spiced red marinade', price: 240, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-5', categoryId: 'c-1', name: 'Crispy Corn', description: '[Type: Veg] Deep fried sweet corn kernels tossed with spices and onions', price: 140, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-6', categoryId: 'c-1', name: 'Gobi Manchurian Dry', description: '[Type: Veg] Cauliflower florets tossed in hot schezwan sauce', price: 150, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-7', categoryId: 'c-1', name: 'Mushroom Duplex', description: '[Type: Veg] Stuffed mushroom caps crumb fried and served with dip', price: 190, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1517244681291-7d930cc7ab3b?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-8', categoryId: 'c-1', name: 'Veg Spring Rolls', description: '[Type: Veg] Crispy pastry sheets filled with seasoned julienne vegetables', price: 160, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-9', categoryId: 'c-1', name: 'Cheese Cherry Pineapple', description: '[Type: Veg] Classic cocktail starter with cheese cubes, cherries and pineapple', price: 170, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-10', categoryId: 'c-1', name: 'Soya Chaap Tikka', description: '[Type: Veg] Soya chunks marinated in spiced yogurt and grilled in tandoor', price: 180, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-11', categoryId: 'c-1', name: 'Chicken Lollipop', description: '[Type: Non-Veg] Deep-fried seasoned chicken wings served with schezwan sauce', price: 220, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-12', categoryId: 'c-1', name: 'Chicken Seekh Kebab', description: '[Type: Non-Veg] Spiced skewered minced chicken rolls baked in tandoor', price: 260, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-13', categoryId: 'c-1', name: 'Mutton Seekh Kebab', description: '[Type: Non-Veg] Traditional spiced minced mutton skewers grilled to perfection', price: 320, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-14', categoryId: 'c-1', name: 'Fish Amritsari', description: '[Type: Sea Food] Batter-fried fish fingers coated with carom-flavored gram flour', price: 280, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-15', categoryId: 'c-1', name: 'Golden Fried Prawns', description: '[Type: Sea Food] Crispy golden fried prawns served with hot garlic dip', price: 340, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-16', categoryId: 'c-1', name: 'Chicken Spring Rolls', description: '[Type: Non-Veg] Crispy wraps stuffed with minced chicken and vegetables', price: 190, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-17', categoryId: 'c-1', name: 'Tandoori Chicken Wings', description: '[Type: Non-Veg] Juicy chicken wings marinated in tandoori spices and charred', price: 210, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-18', categoryId: 'c-1', name: 'Veg Seekh Kebab', description: '[Type: Veg] Minced vegetable skewers seasoned with herbs and grilled', price: 160, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-19', categoryId: 'c-1', name: 'Paneer Hariyali Tikka', description: '[Type: Veg] Cottage cheese cubes marinated in mint and coriander paste', price: 190, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'st-20', categoryId: 'c-1', name: 'Chicken Garlic Kebab', description: '[Type: Non-Veg] Chicken chunks marinated in garlic and yogurt paste and grilled', price: 250, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= SOUPS (c-2 - 20 Items) =================
+        { id: 'sp-1', categoryId: 'c-2', name: 'Veg Tomato Soup', description: '[Type: Veg] Rich creamy soup made with fresh red tomatoes and croutons', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-2', categoryId: 'c-2', name: 'Veg Manchow Soup', description: '[Type: Veg] Spicy Indo-Chinese soup served with crispy fried noodles', price: 120, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-3', categoryId: 'c-2', name: 'Veg Hot & Sour Soup', description: '[Type: Veg] Spicy and sour broth loaded with finely chopped vegetables', price: 120, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-4', categoryId: 'c-2', name: 'Sweet Corn Veg Soup', description: '[Type: Veg] Mild comforting soup with sweet corn kernels and vegetables', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-5', categoryId: 'c-2', name: 'Lemon Coriander Soup Veg', description: '[Type: Veg] Refreshing clear soup with fresh coriander and lemon squeeze', price: 120, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-6', categoryId: 'c-2', name: 'Mushroom Cream Soup', description: '[Type: Veg] Thick creamy soup made with fresh button mushrooms', price: 130, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-7', categoryId: 'c-2', name: 'Spinach Clear Soup', description: '[Type: Veg] Light clear broth containing fresh spinach leaves and garlic', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-8', categoryId: 'c-2', name: 'Veg Clear Soup', description: '[Type: Veg] Light healthy broth with seasonal chopped vegetables', price: 100, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-9', categoryId: 'c-2', name: 'Noodle Soup Veg', description: '[Type: Veg] Clear soup containing soft noodles and green vegetables', price: 120, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-10', categoryId: 'c-2', name: 'Lentil & Veg Soup', description: '[Type: Veg] Nutritious thick soup made of yellow lentils and spices', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-11', categoryId: 'c-2', name: 'Chicken Manchow Soup', description: '[Type: Non-Veg] Spicy Chinese soup with chicken bits and crispy noodles', price: 140, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-12', categoryId: 'c-2', name: 'Chicken Hot & Sour Soup', description: '[Type: Non-Veg] Tangy chicken broth loaded with chicken and egg drops', price: 140, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-13', categoryId: 'c-2', name: 'Sweet Corn Chicken Soup', description: '[Type: Non-Veg] Mild soup with cream corn and shredded chicken pieces', price: 130, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-14', categoryId: 'c-2', name: 'Clear Chicken Soup', description: '[Type: Non-Veg] Light clear soup with chicken strips and mild spices', price: 120, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-15', categoryId: 'c-2', name: 'Cream of Chicken Soup', description: '[Type: Non-Veg] Rich thick creamy chicken soup cooked with fresh cream', price: 150, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-16', categoryId: 'c-2', name: 'Chicken Lemon Coriander Soup', description: '[Type: Non-Veg] Healthy clear chicken broth seasoned with lemon and fresh coriander', price: 140, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-17', categoryId: 'c-2', name: 'Seafood Hot Soup', description: '[Type: Sea Food] Hot and sour broth with mixed prawns, crab meat, and squid', price: 160, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-18', categoryId: 'c-2', name: 'Fish Clear Soup', description: '[Type: Sea Food] Light clear broth featuring fresh fish cubes and dill', price: 150, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-19', categoryId: 'c-2', name: 'Prawns Cream Soup', description: '[Type: Sea Food] Smooth rich creamy soup with baby prawns and butter', price: 170, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'sp-20', categoryId: 'c-2', name: 'Chicken Noodle Soup', description: '[Type: Non-Veg] Comforting hot chicken broth with soft egg noodles', price: 140, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1547592165-e1d17f1a0655?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= MAIN COURSE (c-3 - 20 Items) =================
+        { id: 'v-1', categoryId: 'c-3', name: 'Dal Tadka', description: '[Type: Veg] Traditional yellow lentils tempered with ghee, garlic, and cumin', price: 180, isVeg: true, isChefSpecial: false, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'v-2', categoryId: 'c-3', name: 'Dal Khichadi', description: '[Type: Veg] Comforting rice and lentil porridge tempered with spices', price: 199, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=400&h=300&q=80' },
         { id: 'v-5', categoryId: 'c-3', name: 'Paneer Butter Masala', description: '[Type: Veg] Soft paneer cubes in creamy, mildly sweet tomato gravy', price: 260, isVeg: true, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=400&h=300&q=80' },
         { id: 'v-6', categoryId: 'c-3', name: 'Kadai Paneer', description: '[Type: Veg] Paneer cooked with bell peppers and freshly ground kadai spices', price: 250, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-7', categoryId: 'c-3', name: 'Veg Thali', description: '[Type: Veg] Complete meal with dal, two veg curries, rice, chapati, and sweet', price: 199, isVeg: true, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'v-7', categoryId: 'c-3', name: 'Veg Thali', description: '[Type: Veg] Complete meal with dal, two veg curries, rice, chapati, and sweet', price: 220, isVeg: true, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&w=400&h=300&q=80' },
         { id: 'v-8', categoryId: 'c-3', name: 'Paneer Tikka Masala', description: '[Type: Veg] Grilled paneer chunks in spicy spiced onion tomato gravy', price: 270, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-9', categoryId: 'c-3', name: 'Mix Vegetable Curry', description: '[Type: Veg] Seasonal mixed vegetables cooked in North Indian style gravy', price: 180, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-10', categoryId: 'c-3', name: 'Chole Bhature', description: '[Type: Veg] Spicy chickpea curry served with two puffed fried breads', price: 150, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1627662236973-4f8259fa2441?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-11', categoryId: 'c-3', name: 'Aloo Gobi Masala', description: '[Type: Veg] Classic dry dish of potatoes and cauliflower with spices', price: 130, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1606755962773-d324e0a13086?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-12', categoryId: 'c-3', name: 'Veg Biryani', description: '[Type: Veg] Layers of basmati rice and mixed vegetables cooked on dum', price: 210, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-13', categoryId: 'c-3', name: 'Masala Dosa', description: '[Type: Veg] Crispy crepe filled with potato masala served with chutney and sambar', price: 99, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-14', categoryId: 'c-3', name: 'Paneer Chilli', description: '[Type: Veg] Indo-Chinese style paneer tossed in soy and green chilli sauce', price: 199, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-15', categoryId: 'c-3', name: 'Veg Hakka Noodles', description: '[Type: Veg] Wok-tossed noodles with colorful garden veggies and soy', price: 160, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-16', categoryId: 'c-3', name: 'Gobi Manchurian', description: '[Type: Veg] Deep-fried cauliflower florets in sweet and tangy sauce', price: 150, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-17', categoryId: 'c-3', name: 'Mushroom Masala', description: '[Type: Veg] Button mushrooms in spiced onion tomato masala gravy', price: 240, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1517244681291-7d930cc7ab3b?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-18', categoryId: 'c-3', name: 'Palak Paneer', description: '[Type: Veg] Creamy cottage cheese cubes in rich spinach sauce', price: 230, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-19', categoryId: 'c-3', name: 'Baingan Bharta', description: '[Type: Veg] Roasted and mashed eggplant cooked with peas and spices', price: 160, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'v-20', categoryId: 'c-3', name: 'Butter Tandoori Roti', description: '[Type: Veg] Whole wheat flatbread baked in tandoor with butter', price: 25, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'v-9', categoryId: 'c-3', name: 'Mix Vegetable Curry', description: '[Type: Veg] Seasonal mixed vegetables cooked in North Indian style gravy', price: 185, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'v-10', categoryId: 'c-3', name: 'Chole Bhature', description: '[Type: Veg] Spicy chickpea curry served with two puffed fried breads', price: 160, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1627662236973-4f8259fa2441?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'v-11', categoryId: 'c-3', name: 'Aloo Gobi Masala', description: '[Type: Veg] Classic dry dish of potatoes and cauliflower with spices', price: 150, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1606755962773-d324e0a13086?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'v-18', categoryId: 'c-3', name: 'Palak Paneer', description: '[Type: Veg] Creamy cottage cheese cubes in rich spinach sauce', price: 240, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1610192244261-3f33de3f55e4?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-1', categoryId: 'c-3', name: 'Chicken Thali', description: '[Type: Non-Veg] Special thali with Chicken Curry, Egg, Rice, Bhakri, and Solkadhi', price: 260, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-2', categoryId: 'c-3', name: 'Mutton Thali', description: '[Type: Non-Veg] Premium thali with Mutton Masala, Rassa, Rice, Bhakri, and Solkadhi', price: 340, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-3', categoryId: 'c-3', name: 'Chicken Handi', description: '[Type: Non-Veg] Tender chicken pieces cooked in aromatic spices in a handi', price: 360, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-5', categoryId: 'c-3', name: 'Butter Chicken', description: '[Type: Non-Veg] Tandoori chicken chunks cooked in rich buttery tomato sauce', price: 349, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-6', categoryId: 'c-3', name: 'Chicken Tikka Masala', description: '[Type: Non-Veg] Grilled chicken tikka in spiced curry gravy', price: 320, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-9', categoryId: 'c-3', name: 'Mutton Rogan Josh', description: '[Type: Non-Veg] Kashmiri style mutton cooked in yogurt and saffron gravy', price: 380, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-10', categoryId: 'c-3', name: 'Chicken Korma', description: '[Type: Non-Veg] Chicken braised with yogurt, cream, and nut paste', price: 310, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-14', categoryId: 'c-3', name: 'Chicken Masala', description: '[Type: Non-Veg] Homestyle thick chicken curry with fresh ground spices', price: 280, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-15', categoryId: 'c-3', name: 'Chicken Kadai', description: '[Type: Non-Veg] Chicken cooked with bell peppers in iron wok', price: 290, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'nv-16', categoryId: 'c-3', name: 'Egg Masala Curry', description: '[Type: Non-Veg] Hard-boiled eggs in onion-tomato based gravy', price: 180, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
 
-        // ================= NON-VEG ITEMS (20 Items) =================
-        { id: 'nv-1', categoryId: 'c-4', name: 'Chicken Thali', description: '[Type: Non-Veg] Special thali with Chicken Curry, Egg, Rice, Bhakri, and Solkadhi', price: 249, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-2', categoryId: 'c-4', name: 'Mutton Thali', description: '[Type: Non-Veg] Premium thali with Mutton Masala, Rassa, Rice, Bhakri, and Solkadhi', price: 329, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-3', categoryId: 'c-4', name: 'Chicken Handi (Half)', description: '[Type: Non-Veg] Tender chicken pieces cooked in aromatic spices (Serves 2)', price: 299, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-4', categoryId: 'c-4', name: 'Chicken Handi (Full)', description: '[Type: Non-Veg] Spicy chicken cooked in a handi with rich gravy (Serves 4)', price: 499, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-5', categoryId: 'c-4', name: 'Butter Chicken', description: '[Type: Non-Veg] Tandoori chicken chunks cooked in rich buttery tomato sauce', price: 349, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-6', categoryId: 'c-4', name: 'Chicken Tikka Masala', description: '[Type: Non-Veg] Grilled chicken tikka in spiced curry gravy', price: 320, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-7', categoryId: 'c-4', name: 'Chicken Biryani', description: '[Type: Non-Veg] Long grain basmati rice and layered spiced chicken', price: 280, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-8', categoryId: 'c-4', name: 'Mutton Biryani', description: '[Type: Non-Veg] Premium basmati rice layered with juicy mutton chunks', price: 360, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-9', categoryId: 'c-4', name: 'Mutton Rogan Josh', description: '[Type: Non-Veg] Kashmiri style mutton cooked in yogurt and saffron gravy', price: 380, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-10', categoryId: 'c-4', name: 'Chicken Korma', description: '[Type: Non-Veg] Chicken braised with yogurt, cream, and nut paste', price: 310, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-11', categoryId: 'c-4', name: 'Chicken Tandoori (Half)', description: '[Type: Non-Veg] Clay-oven roasted whole chicken in tandoori red masala', price: 240, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-12', categoryId: 'c-4', name: 'Chicken Tandoori (Full)', description: '[Type: Non-Veg] Full chicken roasted with tandoori spices and mint chutney', price: 420, isVeg: false, isChefSpecial: true, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-13', categoryId: 'c-4', name: 'Chicken Lollipop', description: '[Type: Non-Veg] Deep-fried seasoned chicken wings served with schezwan sauce', price: 220, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-14', categoryId: 'c-4', name: 'Chicken Masala', description: '[Type: Non-Veg] Homestyle thick chicken curry with fresh ground spices', price: 280, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-15', categoryId: 'c-4', name: 'Chicken Kadai', description: '[Type: Non-Veg] Chicken cooked with bell peppers in iron wok', price: 290, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-16', categoryId: 'c-4', name: 'Egg Masala Curry', description: '[Type: Non-Veg] Hard-boiled eggs in onion-tomato based gravy', price: 160, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-17', categoryId: 'c-4', name: 'Chicken Chilli Dry', description: '[Type: Non-Veg] Crispy fried chicken bites with capsicum and dark soy', price: 240, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-18', categoryId: 'c-4', name: 'Chicken Fried Rice', description: '[Type: Non-Veg] Fluffy wok rice tossed with egg, chicken, and green onions', price: 210, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-19', categoryId: 'c-4', name: 'Chicken Shawarma Wrap', description: '[Type: Non-Veg] Shaved grilled chicken wrapped in rumali roti with garlic mayo', price: 120, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'nv-20', categoryId: 'c-4', name: 'Chicken Seekh Kebab', description: '[Type: Non-Veg] Spiced skewered minced chicken rolls baked in tandoor', price: 260, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=400&h=300&q=80' },
-
-        // ================= SEA FOOD ITEMS (20 Items) =================
+        // ================= SEA FOOD (c-5 - 20 Items) =================
         { id: 'sf-1', categoryId: 'c-5', name: 'Fish Surmai Fry', description: '[Type: Sea Food] Tawa-fried Surmai steak coated in rava and spice blend', price: 299, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
         { id: 'sf-2', categoryId: 'c-5', name: 'Prawns Masala', description: '[Type: Sea Food] Small prawns cooked in thick spiced coastal gravy', price: 360, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
         { id: 'sf-3', categoryId: 'c-5', name: 'Fish Surmai Thali', description: '[Type: Sea Food] Surmai Fry, Fish Curry, Rice, Solkadhi, and Chapatis', price: 349, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
@@ -155,7 +169,139 @@ export const DigitalMenuBuilder: React.FC = () => {
         { id: 'sf-17', categoryId: 'c-5', name: 'Bombil Rava Fry', description: '[Type: Sea Food] Crisp fried Bombay Duck coated with seasoned semolina', price: 199, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
         { id: 'sf-18', categoryId: 'c-5', name: 'Seafood Fried Rice', description: '[Type: Sea Food] Long grain rice wok-tossed with fresh prawns and squid bits', price: 240, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
         { id: 'sf-19', categoryId: 'c-5', name: 'Fish Fingers', description: '[Type: Sea Food] Crumbed and deep-fried fish strips served with tartar sauce', price: 220, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
-        { id: 'sf-20', categoryId: 'c-5', name: 'Prawns Fry Tawa', description: '[Type: Sea Food] Fresh prawns pan-fried in ginger-garlic and red chilli paste', price: 290, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' }
+        { id: 'sf-20', categoryId: 'c-5', name: 'Prawns Fry Tawa', description: '[Type: Sea Food] Fresh prawns pan-fried in ginger-garlic and red chilli paste', price: 290, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= RICE (c-6 - 20 Items) =================
+        { id: 'rc-1', categoryId: 'c-6', name: 'Jeera Rice', description: '[Type: Veg] Aromatic basmati rice tempered with cumin seeds and coriander', price: 120, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-2', categoryId: 'c-6', name: 'Steam Basmati Rice', description: '[Type: Veg] Premium steamed long-grain basmati rice', price: 99, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-3', categoryId: 'c-6', name: 'Veg Biryani', description: '[Type: Veg] Layers of basmati rice and mixed vegetables cooked on dum', price: 210, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-4', categoryId: 'c-6', name: 'Chicken Biryani', description: '[Type: Non-Veg] Long grain basmati rice and layered spiced chicken', price: 280, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-5', categoryId: 'c-6', name: 'Mutton Biryani', description: '[Type: Non-Veg] Premium basmati rice layered with juicy mutton chunks', price: 360, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-6', categoryId: 'c-6', name: 'Prawns Dum Biryani', description: '[Type: Sea Food] Spiced prawns dum-cooked with long grain basmati rice', price: 340, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-7', categoryId: 'c-6', name: 'Veg Fried Rice', description: '[Type: Veg] Wok-tossed rice with finely chopped garden vegetables', price: 160, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-8', categoryId: 'c-6', name: 'Chicken Fried Rice', description: '[Type: Non-Veg] Fluffy wok rice tossed with egg, chicken, and green onions', price: 210, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-9', categoryId: 'c-6', name: 'Egg Fried Rice', description: '[Type: Non-Veg] Fluffy wok rice tossed with scrambled eggs and spring onions', price: 180, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-10', categoryId: 'c-6', name: 'Schezwan Veg Fried Rice', description: '[Type: Veg] Spicy rice tossed in house schezwan sauce with vegetables', price: 170, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-11', categoryId: 'c-6', name: 'Schezwan Chicken Fried Rice', description: '[Type: Non-Veg] Wok fried rice with chicken, egg, and spicy schezwan paste', price: 220, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-12', categoryId: 'c-6', name: 'Peas Pulao', description: '[Type: Veg] Mild basmati rice pilaf cooked with sweet green peas', price: 140, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-13', categoryId: 'c-6', name: 'Kashmiri Pulao', description: '[Type: Veg] Sweetish basmati rice preparation cooked with dry fruits and apple slices', price: 190, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-14', categoryId: 'c-6', name: 'Paneer Biryani', description: '[Type: Veg] Fragrant basmati rice layered with paneer tikka cubes', price: 240, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-15', categoryId: 'c-6', name: 'Egg Biryani', description: '[Type: Non-Veg] Premium basmati rice cooked with hard boiled spiced eggs', price: 220, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-16', categoryId: 'c-6', name: 'Mushroom Biryani', description: '[Type: Veg] Long grain rice cooked with button mushrooms and spices', price: 230, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1563379971899-660589a01cc3?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-17', categoryId: 'c-6', name: 'Garlic Fried Rice Veg', description: '[Type: Veg] Fluffy basmati rice tossed with burnt garlic and green onions', price: 165, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-18', categoryId: 'c-6', name: 'Singapore Veg Fried Rice', description: '[Type: Veg] Rice wok tossed with vegetables, curry powder and cashew nuts', price: 180, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-19', categoryId: 'c-6', name: 'Mixed Seafood Rice', description: '[Type: Sea Food] Wok-tossed rice containing baby prawns, squid and fish flakes', price: 280, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'rc-20', categoryId: 'c-6', name: 'Lemon Rice', description: '[Type: Veg] South Indian rice dish tempered with mustard seeds, curry leaves, and lemon', price: 130, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= BREADS (c-7 - 20 Items) =================
+        { id: 'br-1', categoryId: 'c-7', name: 'Butter Tandoori Roti', description: '[Type: Veg] Whole wheat flatbread baked in tandoor with butter', price: 25, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-2', categoryId: 'c-7', name: 'Plain Tandoori Roti', description: '[Type: Veg] Whole wheat flatbread baked in tandoor without butter', price: 20, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-3', categoryId: 'c-7', name: 'Plain Naan', description: '[Type: Veg] Soft leavened white flour flatbread baked in clay oven', price: 40, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-4', categoryId: 'c-7', name: 'Butter Naan', description: '[Type: Veg] Soft white flour flatbread glazed with melted butter', price: 50, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-5', categoryId: 'c-7', name: 'Garlic Naan', description: '[Type: Veg] Clay oven flatbread topped with minced garlic and coriander', price: 60, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-6', categoryId: 'c-7', name: 'Cheese Naan', description: '[Type: Veg] Delicious flatbread stuffed with processed cheese and herbs', price: 80, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-7', categoryId: 'c-7', name: 'Laccha Paratha', description: '[Type: Veg] Multi-layered flaky whole wheat bread baked in tandoor', price: 45, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-8', categoryId: 'c-7', name: 'Pudina Paratha', description: '[Type: Veg] Flaky layered paratha flavored with dried mint powder', price: 50, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-9', categoryId: 'c-7', name: 'Plain Kulcha', description: '[Type: Veg] Leavened flatbread topped with sesame seeds and coriander', price: 40, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-10', categoryId: 'c-7', name: 'Butter Kulcha', description: '[Type: Veg] Soft kulcha glazed with butter', price: 45, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-11', categoryId: 'c-7', name: 'Masala Kulcha', description: '[Type: Veg] Kulcha stuffed with spicy potato and onion mixture', price: 70, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-12', categoryId: 'c-7', name: 'Paneer Kulcha', description: '[Type: Veg] Flatbread stuffed with seasoned grated cottage cheese', price: 85, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-13', categoryId: 'c-7', name: 'Roti Basket', description: '[Type: Veg] Assortment of Rotis, Naans, and Parathas (Serves 2-3)', price: 180, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-14', categoryId: 'c-7', name: 'Aloo Paratha', description: '[Type: Veg] Griddle-fried whole wheat flatbread stuffed with spiced potato masala', price: 70, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-15', categoryId: 'c-7', name: 'Paneer Paratha', description: '[Type: Veg] Griddle-fried flatbread filled with seasoned grated paneer', price: 90, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-16', categoryId: 'c-7', name: 'Missi Roti', description: '[Type: Veg] Nutritious flatbread made of gram flour, spices, and green chillies', price: 35, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-17', categoryId: 'c-7', name: 'Roomali Roti', description: '[Type: Veg] Extremely thin, soft flatbread folded like a handkerchief', price: 30, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-18', categoryId: 'c-7', name: 'Bhatura', description: '[Type: Veg] Large, deep-fried puffed leavened bread', price: 40, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-19', categoryId: 'c-7', name: 'Chapati', description: '[Type: Veg] Traditional Indian soft thin flatbread cooked on tawa', price: 15, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'br-20', categoryId: 'c-7', name: 'Keema Naan', description: '[Type: Non-Veg] Premium flatbread stuffed with spiced minced chicken', price: 120, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= PIZZA (c-9 - 20 Items) =================
+        { id: 'pz-1', categoryId: 'c-9', name: 'Margherita Pizza', description: '[Type: Veg] Classic hand-stretched crust topped with fresh mozzarella and basil oil', price: 299, isVeg: true, isChefSpecial: false, isRecommended: true, status: 'Active', isOnOffer: true, offerPrice: 249, image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-2', categoryId: 'c-9', name: 'Farmhouse Pizza', description: '[Type: Veg] Fresh bell peppers, golden corn, fresh mushrooms, and onions', price: 349, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-3', categoryId: 'c-9', name: 'Veg Supreme Pizza', description: '[Type: Veg] Overloaded paneer tikka, black olives, jalapenos, and baby corn', price: 389, isVeg: true, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-4', categoryId: 'c-9', name: 'Cheese Burst Pizza', description: '[Type: Veg] Liquid cheese filled crust topped with double mozzarella and herbs', price: 429, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-5', categoryId: 'c-9', name: 'Double Cheese Margherita', description: '[Type: Veg] Loaded with extra Mozzarella cheese on a classic tangy sauce base', price: 330, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-6', categoryId: 'c-9', name: 'Spicy Paneer Pizza', description: '[Type: Veg] Spicy paneer chunks, red paprika, and capsicum', price: 360, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-7', categoryId: 'c-9', name: 'Veggie Paradise', description: '[Type: Veg] Baby corn, black olives, red bell peppers, and capsicum', price: 350, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-8', categoryId: 'c-9', name: 'Paneer Tikka Pizza', description: '[Type: Veg] Marinated cottage cheese chunks, onion, capsicum, and spicy masala drizzle', price: 370, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-9', categoryId: 'c-9', name: 'Tandoori Paneer Pizza', description: '[Type: Veg] Tandoori paneer, green capsicum, onion, and red paprika with spicy sauce', price: 375, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-10', categoryId: 'c-9', name: 'Five Cheese Pizza', description: '[Type: Veg] Mozzarella, Cheddar, Gouda, Feta, and Blue Cheese cream base', price: 440, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-11', categoryId: 'c-9', name: 'Chicken Tikka Pizza', description: '[Type: Non-Veg] Tandoori chicken tikka pieces, green chillies, and red onion', price: 399, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-12', categoryId: 'c-9', name: 'Pepperoni Pizza', description: '[Type: Non-Veg] Classic pork pepperoni slices and loaded mozzarella cheese', price: 420, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-13', categoryId: 'c-9', name: 'Chicken BBQ Pizza', description: '[Type: Non-Veg] Grilled chicken chunks, BBQ sauce base, and sweet red onions', price: 410, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-14', categoryId: 'c-9', name: 'Spicy Chicken Supreme', description: '[Type: Non-Veg] Spiced chicken chunks, chicken seekh, hot jalapenos, and red paprika', price: 430, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-15', categoryId: 'c-9', name: 'Non-Veg Supreme', description: '[Type: Non-Veg] Chicken tikka, mutton keema, chicken seekh, onion, and olives', price: 450, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-16', categoryId: 'c-9', name: 'Peri Peri Chicken Pizza', description: '[Type: Non-Veg] Chicken pieces in spicy peri-peri marinade, bell peppers, and onion', price: 410, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-17', categoryId: 'c-9', name: 'Butter Chicken Pizza', description: '[Type: Non-Veg] Shredded chicken in rich butter chicken gravy, onion, and coriander', price: 420, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-18', categoryId: 'c-9', name: 'Prawns & Garlic Pizza', description: '[Type: Sea Food] Fresh baby prawns, roasted garlic bits, and creamy white sauce', price: 460, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-19', categoryId: 'c-9', name: 'Tuna & Onion Pizza', description: '[Type: Sea Food] Flaked tuna fish, red onion rings, green chillies, and olives', price: 430, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'pz-20', categoryId: 'c-9', name: 'Chicken Keema Pizza', description: '[Type: Non-Veg] Spiced minced chicken, green peas, onion, and green chillies', price: 390, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= BURGERS (c-10 - 20 Items) =================
+        { id: 'bg-1', categoryId: 'c-10', name: 'Veg Burger', description: '[Type: Veg] Crispy vegetable patty, sliced tomatoes, onions, lettuce, and mayo', price: 120, isVeg: true, isChefSpecial: false, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-2', categoryId: 'c-10', name: 'Cheese Burger', description: '[Type: Veg] Gourmet veg patty loaded with cheddar slice and house special sauce', price: 140, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', isOnOffer: true, offerPrice: 119, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-3', categoryId: 'c-10', name: 'Chicken Burger', description: '[Type: Non-Veg] Crispy fried chicken breast, pickled jalapenos, and spicy garlic aioli', price: 180, isVeg: false, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-4', categoryId: 'c-10', name: 'Double Patty Burger', description: '[Type: Non-Veg] Grilled double chicken patties layered with caramelized onions and cheese', price: 240, isVeg: false, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-5', categoryId: 'c-10', name: 'Spicy Paneer Burger', description: '[Type: Veg] Crispy paneer patty marinated in hot spices and loaded with sauce', price: 150, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-6', categoryId: 'c-10', name: 'Aloo Tikki Burger', description: '[Type: Veg] Golden fried potato patty with onion, tomato, and sweet-sour chutney', price: 90, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-7', categoryId: 'c-10', name: 'Mushroom Cheese Burger', description: '[Type: Veg] Veg patty topped with sautéed button mushrooms and melted Swiss cheese', price: 160, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-8', categoryId: 'c-10', name: 'Veg Chilli Lava Burger', description: '[Type: Veg] Veg patty with dynamic spicy chilli paste and liquid cheese slice', price: 150, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-9', categoryId: 'c-10', name: 'Paneer Tikka Burger', description: '[Type: Veg] Marinated paneer block roasted in tandoor and layered with mint mayo', price: 170, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-10', categoryId: 'c-10', name: 'Corn & Spinach Burger', description: '[Type: Veg] Creamy sweet corn and spinach patty with garlic sauce', price: 130, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-11', categoryId: 'c-10', name: 'Fried Fish Burger', description: '[Type: Sea Food] Crispy golden fried fish fillet served with tartar sauce and lettuce', price: 210, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-12', categoryId: 'c-10', name: 'Egg Burger', description: '[Type: Non-Veg] Two fried eggs cooked sunny-side up, onions, tomatoes, and mayo', price: 110, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-13', categoryId: 'c-10', name: 'BBQ Chicken Burger', description: '[Type: Non-Veg] Grilled chicken breast glazed with hickory BBQ sauce and cheese', price: 190, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-14', categoryId: 'c-10', name: 'Chicken Cheese Burst Burger', description: '[Type: Non-Veg] Chicken patty stuffed with melted liquid cheese inside', price: 210, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-15', categoryId: 'c-10', name: 'Tandoori Chicken Burger', description: '[Type: Non-Veg] Tandoori chicken tikka fillet layered with sliced onions and mint dressing', price: 190, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-16', categoryId: 'c-10', name: 'Crispy Prawn Burger', description: '[Type: Sea Food] Golden fried prawns patty served with spicy sriracha mayo', price: 230, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-17', categoryId: 'c-10', name: 'Mutton Keema Burger', description: '[Type: Non-Veg] Spiced minced mutton cooked in butter and served in warm burger buns', price: 250, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-18', categoryId: 'c-10', name: 'Double Mutton Burger', description: '[Type: Non-Veg] Two juicy grilled mutton patties, double cheese, and caramelized onion', price: 290, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-19', categoryId: 'c-10', name: 'Grilled Chicken Burger', description: '[Type: Non-Veg] Juicy herb-marinated grilled chicken breast fillet with fresh salad', price: 180, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bg-20', categoryId: 'c-10', name: 'Chicken Chilli Lava Burger', description: '[Type: Non-Veg] Crispy chicken patty, hot spicy red chilli sauce, and cheese slice', price: 200, isVeg: false, status: 'Active', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= DESSERTS (c-13 - 20 Items) =================
+        { id: 'ds-1', categoryId: 'c-13', name: 'Sizzling Brownie', description: '[Type: Veg] Warm chocolate brownie on hot sizzler plate with vanilla scoop and fudge', price: 150, isVeg: true, isChefSpecial: true, isRecommended: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-2', categoryId: 'c-13', name: 'Chocolate Lava Cake', description: '[Type: Veg] Freshly baked soft chocolate cake with molten chocolate core', price: 120, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-3', categoryId: 'c-13', name: 'Vanilla Ice Cream', description: '[Type: Veg] Two scoops of classic creamy vanilla bean ice cream', price: 80, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-4', categoryId: 'c-13', name: 'Chocolate Ice Cream', description: '[Type: Veg] Rich creamy double scoop chocolate ice cream with fudge sauce', price: 85, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-5', categoryId: 'c-13', name: 'Strawberry Scoop', description: '[Type: Veg] Sweet creamy strawberry ice cream served with fruit syrup', price: 80, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-6', categoryId: 'c-13', name: 'Gulab Jamun', description: '[Type: Veg] Two warm soft milk solids dumplings soaked in rose cardamom sugar syrup', price: 70, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-7', categoryId: 'c-13', name: 'Kesar Rasmalai', description: '[Type: Veg] Two soft paneer discs soaked in sweet saffron reduced milk', price: 90, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-8', categoryId: 'c-13', name: 'Chocolate Brownie', description: '[Type: Veg] Plain rich dense chocolate fudge brownie cake slice', price: 100, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-9', categoryId: 'c-13', name: 'Blueberry Cheesecake', description: '[Type: Veg] Classic cold cheesecake slice topped with sweet blueberry compote', price: 160, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-10', categoryId: 'c-13', name: 'Apple Pie with Ice Cream', description: '[Type: Veg] Warm spiced apple pie slice served with vanilla ice cream scoop', price: 140, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-11', categoryId: 'c-13', name: 'Tiramisu Slice', description: '[Type: Veg] Elegant Italian dessert with coffee-soaked ladyfingers and mascarpone', price: 180, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-12', categoryId: 'c-13', name: 'Fruit Custard', description: '[Type: Veg] Chilled sweet yellow vanilla custard mixed with fresh seasonal fruits', price: 95, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-13', categoryId: 'c-13', name: 'Moong Dal Halwa', description: '[Type: Veg] Traditional rich warm dessert made of yellow lentils, ghee, and sugar', price: 100, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-14', categoryId: 'c-13', name: 'Gajar Ka Halwa', description: '[Type: Veg] Warm sweet carrot pudding cooked with milk, ghee, and nuts', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-15', categoryId: 'c-13', name: 'Caramel Custard', description: '[Type: Veg] Classic sweet custard dessert baked with soft caramel syrup coating', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-16', categoryId: 'c-13', name: 'Chocolate Mousse', description: '[Type: Veg] Fluffy light airy chocolate cream whipped with dark cocoa', price: 120, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-17', categoryId: 'c-13', name: 'Red Velvet Pastry', description: '[Type: Veg] Moist red velvet cake slice layered with rich cream cheese frosting', price: 130, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-18', categoryId: 'c-13', name: 'Butterscotch Pastry', description: '[Type: Veg] Sweet vanilla sponge cake slice layered with butterscotch crunch and cream', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-19', categoryId: 'c-13', name: 'Mango Kulfi', description: '[Type: Veg] Traditional rich creamy frozen Indian mango dessert on stick', price: 90, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'ds-20', categoryId: 'c-13', name: 'Malai Kulfi', description: '[Type: Veg] Traditional cardamom infused condensed milk kulfi ice cream', price: 80, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=400&h=300&q=80' },
+
+        // ================= BEVERAGES (c-15 - 20 Items) =================
+        { id: 'bv-1', categoryId: 'c-15', name: 'Coffee', description: '[Type: Veg] Premium roasted arabica hot brewed coffee served with milk', price: 60, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-2', categoryId: 'c-15', name: 'Tea', description: '[Type: Veg] Traditional aromatic Indian masala chai brewed with fresh ginger', price: 40, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-3', categoryId: 'c-15', name: 'Cold Drink', description: '[Type: Veg] Chilled aerated carbonated cola drink can', price: 40, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-4', categoryId: 'c-15', name: 'Coke Zero', description: '[Type: Veg] Zero sugar chilled soft drink can', price: 45, isVeg: true, isChefSpecial: false, isRecommended: false, status: 'Active', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-5', categoryId: 'c-15', name: 'Fresh Lime Soda', description: '[Type: Veg] Chilled soda water with fresh lime juice, salt or sugar syrup', price: 60, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-6', categoryId: 'c-15', name: 'Mango Lassi', description: '[Type: Veg] Thick traditional sweet yogurt drink blended with mango pulp', price: 90, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-7', categoryId: 'c-15', name: 'Sweet Lassi', description: '[Type: Veg] Chilled whipped thick sweet yogurt drink flavored with rosewater', price: 75, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-8', categoryId: 'c-15', name: 'Salted Lassi', description: '[Type: Veg] Savory traditional yogurt drink flavored with cumin and salt', price: 75, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-9', categoryId: 'c-15', name: 'Masala Chaas', description: '[Type: Veg] Refreshing spiced buttermilk blended with coriander, mint and cumin', price: 50, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-10', categoryId: 'c-15', name: 'Iced Tea Peach', description: '[Type: Veg] Chilled brewed peach iced tea', price: 80, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-11', categoryId: 'c-15', name: 'Iced Tea Lemon', description: '[Type: Veg] Chilled brewed lemon iced tea', price: 80, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-12', categoryId: 'c-15', name: 'Virgin Mojito', description: '[Type: Veg] Refreshing classic virgin mojito drink', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-13', categoryId: 'c-15', name: 'Cold Coffee', description: '[Type: Veg] Creamy rich cold coffee blend', price: 100, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-14', categoryId: 'c-15', name: 'Chocolate Milkshake', description: '[Type: Veg] Rich thick chocolate cream milkshake', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-15', categoryId: 'c-15', name: 'Strawberry Milkshake', description: '[Type: Veg] Creamy milk drink blended with sweet strawberry sauce', price: 110, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-16', categoryId: 'c-15', name: 'Mineral Water', description: '[Type: Veg] Chilled packaged drinking mineral water bottle (1 Litre)', price: 30, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-17', categoryId: 'c-15', name: 'Orange Juice', description: '[Type: Veg] Freshly squeezed sweet orange juice served cold', price: 90, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-18', categoryId: 'c-15', name: 'Pineapple Juice', description: '[Type: Veg] Freshly extracted tropical sweet pineapple juice served cold', price: 90, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-19', categoryId: 'c-15', name: 'Red Bull', description: '[Type: Veg] Standard chilled energy drink can', price: 125, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&h=300&q=80' },
+        { id: 'bv-20', categoryId: 'c-15', name: 'Diet Coke', description: '[Type: Veg] Carbonated low calorie soft drink can served cold', price: 45, isVeg: true, status: 'Active', image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=400&h=300&q=80' }
       ];
 
       const mergedCats = [...cats];
@@ -320,6 +466,17 @@ export const DigitalMenuBuilder: React.FC = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    const iframe = document.querySelector('iframe[title="Customer Menu Preview"]') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: 'MENU_ITEMS_UPDATE',
+        categories,
+        menuItems
+      }, '*');
+    }
+  }, [categories, menuItems]);
+
   const saveCustomizerConfig = (updated: any) => {
     const newConfig = {
       logoUrl: updated.logoUrl !== undefined ? updated.logoUrl : logoUrl,
@@ -394,6 +551,12 @@ export const DigitalMenuBuilder: React.FC = () => {
     setNewItemDesc(cleanDesc);
     setNewItemPrice(String(item.price));
     setNewItemImage(item.image || '');
+    if (item.image) {
+      const parts = item.image.split('/');
+      setNewItemImageName(parts[parts.length - 1] || 'Current Image');
+    } else {
+      setNewItemImageName('');
+    }
     setFoodType(type);
     setNewItemIsChefSpecial(item.isChefSpecial);
     setNewItemIsRecommended(item.isRecommended);
@@ -458,6 +621,7 @@ export const DigitalMenuBuilder: React.FC = () => {
       setNewItemDesc('');
       setNewItemPrice('');
       setNewItemImage('');
+      setNewItemImageName('');
       setFoodType('Veg');
       setNewItemIsChefSpecial(false);
       setNewItemIsRecommended(false);
@@ -494,6 +658,7 @@ export const DigitalMenuBuilder: React.FC = () => {
       setNewItemDesc('');
       setNewItemPrice('');
       setNewItemImage('');
+      setNewItemImageName('');
       setFoodType('Veg');
       setNewItemIsChefSpecial(false);
       setNewItemIsRecommended(false);
@@ -688,11 +853,26 @@ export const DigitalMenuBuilder: React.FC = () => {
                                   <div className="flex-1 flex flex-col justify-between">
                                     <div>
                                       <div className="flex justify-between items-start gap-2">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className={`w-2.5 h-2.5 flex items-center justify-center border text-[6px] font-extrabold rounded shrink-0 ${type === 'Veg' ? 'border-emerald-600 text-emerald-600' : type === 'Non-Veg' ? 'border-red-600 text-red-600' : 'border-sky-600 text-sky-600'}`}>●</span>
+                                          {type === 'Veg' ? (
+                                            <span className="inline-flex items-center justify-center w-[11px] h-[11px] border border-emerald-600 rounded-sm shrink-0 bg-white p-[1.5px]">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                            </span>
+                                          ) : (
+                                            <span className="inline-flex items-center justify-center w-[11px] h-[11px] border border-red-600 rounded-sm shrink-0 bg-white p-[1.5px]">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                                            </span>
+                                          )}
                                           <h5 className="font-bold text-slate-800 text-xs tracking-tight">{item.name}</h5>
+                                        <div className="flex flex-col items-end">
+                                          {item.isOnOffer && item.offerPrice ? (
+                                            <>
+                                              <span className="text-[9px] text-slate-400 line-through">₹{item.price}</span>
+                                              <span className="text-xs font-bold text-emerald-600">₹{item.offerPrice}</span>
+                                            </>
+                                          ) : (
+                                            <span className="text-xs font-bold text-slate-800">₹{item.price}</span>
+                                          )}
                                         </div>
-                                        <span className="text-xs font-bold text-slate-800">₹{item.price}</span>
                                       </div>
                                       <p className="text-[10px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">{cleanDesc || 'Succulent standard recipe.'}</p>
                                     </div>
@@ -820,6 +1000,16 @@ export const DigitalMenuBuilder: React.FC = () => {
                   src={`/public/menu/${selectedTableForPreview?.qrCode?.qrToken || 'MOCK_QR'}?theme=${themeColor}&logo=${logoUrl.startsWith('data:') ? '' : encodeURIComponent(logoUrl)}&cover=${coverUrl.startsWith('data:') ? '' : encodeURIComponent(coverUrl)}&welcome=${encodeURIComponent(welcomeMsg)}&spice=${enableSpiceLevels}&restId=${user?.restaurantId || 'mock-id'}`}
                   className="w-full h-full border-none"
                   title="Customer Menu Preview"
+                  onLoad={(e) => {
+                    const iframeWin = (e.target as HTMLIFrameElement).contentWindow;
+                    if (iframeWin) {
+                      iframeWin.postMessage({
+                        type: 'MENU_ITEMS_UPDATE',
+                        categories,
+                        menuItems
+                      }, '*');
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -924,13 +1114,46 @@ export const DigitalMenuBuilder: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">Image URL (Optional)</label>
-                  <input
-                    type="text"
-                    value={newItemImage}
-                    onChange={(e) => setNewItemImage(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-600 bg-slate-50/50"
-                  />
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">Upload Dish Image</label>
+                  <div className="relative">
+                    <label className="flex items-center gap-2 border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-slate-50/50 cursor-pointer hover:border-emerald-600 transition-colors min-h-[38px]">
+                      <span className="text-slate-500 truncate max-w-[200px] flex-1 text-xs text-left">
+                        {newItemImageName || 'Choose image file...'}
+                      </span>
+                      {newItemImage ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setNewItemImage('');
+                            setNewItemImageName('');
+                          }}
+                          className="bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-full w-4.5 h-4.5 flex items-center justify-center text-[8px] font-bold shrink-0"
+                        >
+                          ✕
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 shrink-0">Browse</span>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setNewItemImageName(file.name);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNewItemImage(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
               <div>

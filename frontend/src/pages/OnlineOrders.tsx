@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  ShoppingBag, 
-  DollarSign, 
-  Percent, 
-  Play 
+import {
+  ShoppingBag,
+  DollarSign,
+  Percent,
+  Play
 } from 'lucide-react';
 
 export const OnlineOrders: React.FC = () => {
@@ -17,7 +17,7 @@ export const OnlineOrders: React.FC = () => {
     try {
       const orders = await apiRequest('/restaurant/online-orders');
       setOnlineOrders(orders);
-      
+
       const items = await apiRequest('/restaurant/menu/items');
       setMenuItems(items);
     } catch (err) {
@@ -75,7 +75,7 @@ export const OnlineOrders: React.FC = () => {
       alert('Please add some menu items first!');
       return;
     }
-    
+
     // Choose 1-2 random menu items
     const randomItem = menuItems[Math.floor(Math.random() * menuItems.length)];
     const items = [

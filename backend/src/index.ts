@@ -28,6 +28,7 @@ import barcodeRoutes from './routes/barcode.routes';
 import exchangeRoutes from './routes/exchange.routes';
 import settingsRoutes from './routes/settings.routes';
 import publicInvoiceRoutes from './routes/publicInvoice.routes';
+import restaurantRoutes from './routes/restaurant.routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,7 +42,7 @@ app.use(morgan('dev'));
 // Health Check
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date() });
- });
+});
 
 // Route mounting
 app.use('/api/auth', authRoutes);
@@ -63,6 +64,7 @@ app.use('/api/barcode', barcodeRoutes);
 app.use('/api/exchange', exchangeRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/public-invoice', publicInvoiceRoutes);
+app.use('/api/restaurant', restaurantRoutes);
 
 
 // Global Error Handler

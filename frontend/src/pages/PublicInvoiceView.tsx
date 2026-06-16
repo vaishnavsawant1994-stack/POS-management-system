@@ -11,6 +11,9 @@ export const PublicInvoiceView: React.FC = () => {
   const [settings, setSettings] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000/api' 
+    : `${window.location.protocol}//${window.location.hostname}:5000/api`;
 
   useEffect(() => {
     const fetchPublicInvoice = async () => {
@@ -18,7 +21,7 @@ export const PublicInvoiceView: React.FC = () => {
       setError(null);
       try {
         const response = await fetch(
-          `http://localhost:5000/api/public-invoice/${invoiceNumber}?token=${token}`
+          `${API_BASE}/public-invoice/${invoiceNumber}?token=${token}`
         );
         if (!response.ok) {
           const errData = await response.json();

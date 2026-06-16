@@ -22,6 +22,8 @@ model User {
   lastLogin     DateTime?               @map("last_login")
   googleId      String?                 @unique @map("google_id")
   emailVerified Boolean                 @default(false) @map("email_verified")
+  businessType  String?                 @map("business_type")
+  businessName  String?                 @map("business_name")
   logs          ActivityLog[]
   conversations AssistantConversation[]
   orders        Order[]
@@ -891,4 +893,241 @@ enum StockStatus {
   IN_STOCK
   LOW_STOCK
   OUT_OF_STOCK
+}
+
+model Restaurant {
+  id           String             @id @default(uuid())
+  name         String
+  type         String             @default("RESTAURANT") // RESTAURANT or CAFE
+  address      String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  tables       RestaurantTable[]
+  categories   MenuCategory[]
+  waiters      RestaurantWaiter[]
+
+  @@map("restaurants")
+}
+
+model RestaurantTable {
+  id             String             @id @default(uuid())
+  restaurantId   String
+  tableNumber    String
+  capacity       Int
+  status         String             @default("AVAILABLE") // AVAILABLE, OCCUPIED, RESERVED, CLEANING
+  activeOrderId  String?
+  restaurant     Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  qrCode         TableQRCode?
+  reservations   RestaurantReservation[]
+  kitchenOrders  KitchenOrder[]
+
+  @@map("restaurant_tables")
+}
+
+model TableQRCode {
+  id        String          @id @default(uuid())
+  tableId   String          @unique
+  qrToken   String          @unique
+  qrCodeUrl String?
+  table     RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@map("table_qr_codes")
+}
+
+model MenuCategory {
+  id           String       @id @default(uuid())
+  restaurantId String
+  name         String
+  description  String?
+  status       String       @default("Active")
+  sortOrder    Int          @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  restaurant   Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItems    MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id             String        @id @default(uuid())
+  categoryId     String
+  name           String
+  description    String?
+  price          Float
+  image          String?
+  status         String        @default("Active")
+  isVeg          Boolean       @default(true)
+  isChefSpecial  Boolean       @default(false)
+  isRecommended  Boolean       @default(false)
+  isOnOffer      Boolean       @default(false)
+  offerPrice     Float?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  category       MenuCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  recipe         Recipe?
+  orderItems     KitchenOrderItem[]
+  addons         MenuItemAddOn[]
+
+  @@map("menu_items")
+}
+
+model MenuItemAddOn {
+  id         String   @id @default(uuid())
+  menuItemId String   @map("menu_item_id")
+  name       String
+  price      Float
+  category   String?  // e.g. "Cheese", "Toppings", "Sides"
+  maxQty     Int      @default(1) @map("max_qty")
+  isOptional Boolean  @default(true) @map("is_optional")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@map("menu_item_addons")
+}
+
+model Ingredient {
+  id             String             @id @default(uuid())
+  name           String             @unique
+  unit           String             @default("PCS")
+  stock          Float              @default(0.0)
+  reorderLevel   Float              @default(10.0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  recipeIngredients RecipeIngredient[]
+
+  @@map("ingredients")
+}
+
+model Recipe {
+  id          String             @id @default(uuid())
+  menuItemId  String             @unique
+  name        String
+  menuItem    MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  ingredients RecipeIngredient[]
+
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id           String     @id @default(uuid())
+  recipeId     String
+  ingredientId String
+  quantity     Float
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@map("recipe_ingredients")
+}
+
+model KitchenOrder {
+  id                String             @id @default(uuid())
+  tableId           String?
+  source            String             @default("WALK_IN") // WALK_IN, QR, SWIGGY, ZOMATO, DIRECT_WEBSITE
+  status            String             @default("NEW") // NEW, ACCEPTED, PREPARING, READY, SERVED, CANCELLED
+  notes             String?
+  waiterId          String?
+  totalAmount       Float              @default(0.0)
+  paymentStatus     String             @default("PENDING") // PENDING, PAID
+  paymentMethod     String?
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  table             RestaurantTable?   @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  items             KitchenOrderItem[]
+  onlineOrder       RestaurantOnlineOrder?
+  feedback          RestaurantFeedback?
+
+  @@map("kitchen_orders")
+}
+
+model KitchenOrderItem {
+  id             String       @id @default(uuid())
+  kitchenOrderId String
+  menuItemId     String
+  quantity       Int
+  notes          String?
+  unitPrice      Float
+  kitchenOrder   KitchenOrder @relation(fields: [kitchenOrderId], references: [id], onDelete: Cascade)
+  menuItem       MenuItem     @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@map("kitchen_order_items")
+}
+
+model RestaurantReservation {
+  id           String          @id @default(uuid())
+  customerName String
+  mobileNumber String
+  date         String
+  time         String
+  guests       Int
+  tableId      String
+  status       String          @default("RESERVED") // RESERVED, CHECKED_IN, COMPLETED, CANCELLED
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  table        RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_reservations")
+}
+
+model RestaurantWaiter {
+  id             String     @id @default(uuid())
+  restaurantId   String
+  name           String
+  mobile         String
+  status         String     @default("ACTIVE") // ACTIVE, INACTIVE
+  ordersServed   Int        @default(0)
+  salesHandled   Float      @default(0.0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_waiters")
+}
+
+model RestaurantOnlineOrder {
+  id             String       @id @default(uuid())
+  kitchenOrderId String       @unique
+  orderSource    String // SWIGGY, ZOMATO, DIRECT_WEBSITE, QR
+  commission     Float        @default(0.0)
+  revenue        Float        @default(0.0)
+  status         String       @default("PENDING")
+  paymentStatus  String       @default("PENDING")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  kitchenOrder   KitchenOrder @relation(fields: [kitchenOrderId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_online_orders")
+}
+
+model RestaurantFeedback {
+  id             String       @id @default(uuid())
+  kitchenOrderId String       @unique
+  rating         Int
+  comments       String?
+  customerName   String?
+  createdAt      DateTime     @default(now())
+  kitchenOrder   KitchenOrder @relation(fields: [kitchenOrderId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_feedback")
+}
+
+model RestaurantOffer {
+  id            String    @id @default(uuid())
+  title         String
+  code          String    @unique
+  discountType  String // PERCENTAGE, FIXED
+  discountValue Float
+  isActive      Boolean   @default(true)
+  startDate     DateTime
+  endDate       DateTime
+  isHappyHour   Boolean   @default(false)
+  happyHourStart String?  // e.g. "17:00"
+  happyHourEnd   String?  // e.g. "20:00"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("restaurant_offers")
 }

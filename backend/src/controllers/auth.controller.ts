@@ -8,9 +8,208 @@ import { sendOTPEmail } from '../utils/email.service';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'pos_super_secret_jwt_key_2026';
 
+const seedRestaurantData = async (restaurantId: string) => {
+  try {
+    // Check if categories already exist for this restaurant
+    const existingCats = await prisma.menuCategory.findMany({ where: { restaurantId } });
+    if (existingCats.length > 0) return;
+
+    // 1. Create Waiters
+    const waiters = [
+      { name: 'David Smith', mobile: '9988776655', status: 'ACTIVE' },
+      { name: 'Sarah Jones', mobile: '9988776644', status: 'ACTIVE' },
+      { name: 'Alex Miller', mobile: '9988776633', status: 'ACTIVE' },
+    ];
+    for (const w of waiters) {
+      await prisma.restaurantWaiter.create({ data: { ...w, restaurantId } });
+    }
+
+    // 2. Create Tables
+    const tables = [
+      { tableNumber: 'Table 1', capacity: 2, status: 'AVAILABLE' },
+      { tableNumber: 'Table 2', capacity: 4, status: 'AVAILABLE' },
+      { tableNumber: 'Table 3', capacity: 4, status: 'AVAILABLE' },
+      { tableNumber: 'Table 4', capacity: 6, status: 'AVAILABLE' },
+      { tableNumber: 'Table 5', capacity: 8, status: 'AVAILABLE' },
+    ];
+    for (const t of tables) {
+      const table = await prisma.restaurantTable.create({ data: { ...t, restaurantId } });
+      await prisma.tableQRCode.create({
+        data: {
+          tableId: table.id,
+          qrToken: `QR_TABLE_${table.tableNumber.replace(' ', '_')}_${restaurantId.slice(0, 4)}`,
+          qrCodeUrl: `/menu/${table.id}`
+        }
+      });
+    }
+
+    // 3. Create Categories
+    const categories = [
+      { name: 'Starters', description: 'Appetizers and snacks', sortOrder: 1 },
+      { name: 'Main Course', description: 'Filling and delicious main dishes', sortOrder: 2 },
+      { name: 'Pizza', description: 'Freshly baked pizzas', sortOrder: 3 },
+      { name: 'Burger', description: 'Juicy burgers with fries', sortOrder: 4 },
+      { name: 'Chinese', description: 'Asian noodles and starters', sortOrder: 5 },
+      { name: 'Beverages', description: 'Mocktails, soda, water', sortOrder: 6 },
+      { name: 'Desserts', description: 'Sweet treats', sortOrder: 7 },
+      { name: 'Combo Meals', description: 'All-in-one meal combos', sortOrder: 8 },
+    ];
+
+    const dbCategories: Record<string, any> = {};
+    for (const c of categories) {
+      dbCategories[c.name] = await prisma.menuCategory.create({
+        data: { ...c, restaurantId }
+      });
+    }
+
+    // 4. Create Ingredients
+    const ingredients = [
+      { name: 'Burger Bun', unit: 'PCS', stock: 120.0, reorderLevel: 20.0 },
+      { name: 'Chicken Patty', unit: 'PCS', stock: 100.0, reorderLevel: 15.0 },
+      { name: 'Cheese Slice', unit: 'PCS', stock: 200.0, reorderLevel: 30.0 },
+      { name: 'Tomato', unit: 'KG', stock: 25.0, reorderLevel: 5.0 },
+      { name: 'Pizza Base', unit: 'PCS', stock: 60.0, reorderLevel: 10.0 },
+      { name: 'Mozzarella Cheese', unit: 'KG', stock: 15.0, reorderLevel: 3.0 },
+      { name: 'Garlic Bread Loaf', unit: 'PCS', stock: 40.0, reorderLevel: 10.0 },
+    ];
+    const dbIngredients: Record<string, any> = {};
+    for (const ing of ingredients) {
+      dbIngredients[ing.name] = await prisma.ingredient.upsert({
+        where: { name: ing.name },
+        update: {},
+        create: ing
+      });
+    }
+
+    // 5. Create Menu Items and Recipes
+    const menuItems = [
+      {
+        name: 'Cheese Burger',
+        description: 'Juicy chicken patty with cheddar cheese, lettuce, and tomato',
+        price: 8.99,
+        isVeg: false,
+        isChefSpecial: false,
+        isRecommended: true,
+        categoryName: 'Burger',
+        recipeIngredients: [
+          { name: 'Burger Bun', quantity: 1.0 },
+          { name: 'Chicken Patty', quantity: 1.0 },
+          { name: 'Cheese Slice', quantity: 1.0 },
+          { name: 'Tomato', quantity: 0.1 }
+        ]
+      },
+      {
+        name: 'Margherita Pizza',
+        description: 'Classic mozzarella cheese on freshly baked tomato sauce crust',
+        price: 11.99,
+        isVeg: true,
+        isChefSpecial: false,
+        isRecommended: false,
+        categoryName: 'Pizza',
+        recipeIngredients: [
+          { name: 'Pizza Base', quantity: 1.0 },
+          { name: 'Mozzarella Cheese', quantity: 0.25 },
+          { name: 'Tomato', quantity: 0.2 }
+        ]
+      },
+      {
+        name: 'Garlic Bread with Cheese',
+        description: 'Warm garlic loaf topped with melted mozzarella and herbs',
+        price: 5.99,
+        isVeg: true,
+        isChefSpecial: true,
+        isRecommended: true,
+        categoryName: 'Starters',
+        recipeIngredients: [
+          { name: 'Garlic Bread Loaf', quantity: 1.0 },
+          { name: 'Mozzarella Cheese', quantity: 0.1 }
+        ]
+      },
+      {
+        name: 'Classic Veg Burger',
+        description: 'Crispy vegetable patty with mayo and fresh lettuce',
+        price: 7.99,
+        isVeg: true,
+        isChefSpecial: false,
+        isRecommended: false,
+        categoryName: 'Burger',
+        recipeIngredients: [
+          { name: 'Burger Bun', quantity: 1.0 },
+          { name: 'Tomato', quantity: 0.1 }
+        ]
+      },
+      {
+        name: 'Coca Cola',
+        description: 'Chilled 300ml soft drink can',
+        price: 1.99,
+        isVeg: true,
+        isChefSpecial: false,
+        isRecommended: false,
+        categoryName: 'Beverages',
+        recipeIngredients: []
+      }
+    ];
+
+    for (const m of menuItems) {
+      const category = dbCategories[m.categoryName];
+      const item = await prisma.menuItem.create({
+        data: {
+          categoryId: category.id,
+          name: m.name,
+          description: m.description,
+          price: m.price,
+          isVeg: m.isVeg,
+          isChefSpecial: m.isChefSpecial,
+          isRecommended: m.isRecommended,
+          status: 'Active'
+        }
+      });
+
+      if (m.recipeIngredients.length > 0) {
+        const recipe = await prisma.recipe.create({
+          data: {
+            menuItemId: item.id,
+            name: `${m.name} Recipe`
+          }
+        });
+
+        for (const ring of m.recipeIngredients) {
+          const ingredient = dbIngredients[ring.name];
+          await prisma.recipeIngredient.create({
+            data: {
+              recipeId: recipe.id,
+              ingredientId: ingredient.id,
+              quantity: ring.quantity
+            }
+          });
+        }
+      }
+    }
+
+    // 6. Create some Reservations
+    const tomorrowStr = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const tableList = await prisma.restaurantTable.findMany({ where: { restaurantId } });
+    if (tableList.length > 0) {
+      await prisma.restaurantReservation.create({
+        data: {
+          customerName: 'Robert Dow',
+          mobileNumber: '9988554422',
+          date: tomorrowStr,
+          time: '19:30',
+          guests: 4,
+          tableId: tableList[1].id,
+          status: 'RESERVED'
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Error seeding restaurant data:', err);
+  }
+};
+
 export const login = async (req: AuthenticatedRequest, res: Response) => {
-  const { email, password } = req.body;
-  console.log(`[Login Attempt] Email: "${email}", Password: "${password}"`);
+  const { email, password, businessType, businessName } = req.body;
+  console.log(`[Login Attempt] Email: "${email}", Password: "${password}", Business Type: "${businessType}", Business Name: "${businessName}"`);
 
   try {
     if (!email || !password) {
@@ -18,35 +217,80 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: { branch: true },
     });
 
     if (!user) {
-      console.log(`[Login Failed] User not found for email: "${email}"`);
-      return res.status(401).json({ message: 'Invalid email or password' });
+      console.log(`[Login Failed] User not found for email: "${normalizedEmail}"`);
+      return res.status(404).json({ message: 'Account Not Found' });
     }
 
     console.log(`[Login Info] User found: "${user.name}", Role: "${user.role}"`);
+    if (user.status && user.status !== 'Active') {
+      console.log(`[Login Failed] Account disabled for user: "${user.name}"`);
+      return res.status(403).json({ message: 'Account Disabled' });
+    }
+
     if (!user.password) {
       console.log('[Login Failed] User has no password set (Google login user)');
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(400).json({ message: 'Password Login Not Set. Please login with Google.' });
     }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     console.log(`[Login Info] Bcrypt compare result: ${isPasswordValid}`);
     if (!isPasswordValid) {
       console.log('[Login Failed] Password mismatch');
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({ message: 'Incorrect Password' });
     }
+
+    // Process Business selection
+    let restaurantId: string | null = null;
+    let finalBusinessType = businessType || user.businessType || 'Retail Store';
+    let finalBusinessName = businessName || user.businessName || 'My Business';
+
+    if (finalBusinessType === 'Restaurant' || finalBusinessType === 'Cafe') {
+      const typeStr = finalBusinessType.toUpperCase();
+      let restaurant = await prisma.restaurant.findFirst({
+        where: { name: finalBusinessName, type: typeStr }
+      });
+      if (!restaurant) {
+        restaurant = await prisma.restaurant.create({
+          data: {
+            name: finalBusinessName,
+            type: typeStr,
+            address: 'Main Street Boulevard'
+          }
+        });
+        console.log(`[Restaurant Created] Seeding template data for restaurant: "${finalBusinessName}"`);
+        await seedRestaurantData(restaurant.id);
+      }
+      restaurantId = restaurant.id;
+    }
+
+    // Update user profile with business selection
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        businessType: finalBusinessType,
+        businessName: finalBusinessName,
+        lastLogin: new Date()
+      }
+    });
 
     const token = jwt.sign(
       {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-        branchId: user.branchId,
+        id: updatedUser.id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        name: updatedUser.name,
+        branchId: updatedUser.branchId,
+        businessType: updatedUser.businessType,
+        businessName: updatedUser.businessName,
+        restaurantId
       },
       JWT_SECRET,
       { expiresIn: '24h' }
@@ -56,7 +300,7 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
     await prisma.loginSession.create({
       data: {
         token,
-        userId: user.id,
+        userId: updatedUser.id,
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
       },
     });
@@ -64,12 +308,15 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
     return res.status(200).json({
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
-        branch: user.branch ? { id: user.branch.id, name: user.branch.name } : null,
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        avatar: updatedUser.avatar,
+        businessType: updatedUser.businessType,
+        businessName: updatedUser.businessName,
+        restaurantId,
+        branch: updatedUser.branchId ? { id: updatedUser.branchId, name: 'Main Branch' } : null,
       },
     });
   } catch (error: any) {
@@ -79,15 +326,17 @@ export const login = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const register = async (req: AuthenticatedRequest, res: Response) => {
-  const { email, password, name, role, branchId } = req.body;
+  const { email, password, name, role, branchId, businessType, businessName } = req.body;
 
   try {
     if (!email || !password || !name) {
       return res.status(400).json({ message: 'Email, password, and name are required' });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -97,11 +346,13 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         name,
-        role: role || 'CASHIER',
+        role: role || 'ADMIN',
         branchId: branchId || null,
+        businessType: businessType || 'Retail Store',
+        businessName: businessName || 'My Retail Shop',
         avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80',
       },
     });
@@ -113,6 +364,8 @@ export const register = async (req: AuthenticatedRequest, res: Response) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        businessType: user.businessType,
+        businessName: user.businessName,
       },
     });
   } catch (error: any) {
@@ -136,6 +389,18 @@ export const me = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Find restaurant if Restaurant/Cafe
+    let restaurantId: string | null = null;
+    if (user.businessType === 'Restaurant' || user.businessType === 'Cafe') {
+      const typeStr = user.businessType.toUpperCase();
+      const restaurant = await prisma.restaurant.findFirst({
+        where: { name: user.businessName || '', type: typeStr }
+      });
+      if (restaurant) {
+        restaurantId = restaurant.id;
+      }
+    }
+
     // Update last login
     await prisma.user.update({
       where: { id: user.id },
@@ -149,6 +414,9 @@ export const me = async (req: AuthenticatedRequest, res: Response) => {
         name: user.name,
         role: user.role,
         avatar: user.avatar,
+        businessType: user.businessType,
+        businessName: user.businessName,
+        restaurantId,
         branch: user.branch ? { id: user.branch.id, name: user.branch.name } : null,
       },
     });

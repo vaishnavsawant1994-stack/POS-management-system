@@ -27,9 +27,20 @@ import { OrdersPage } from './pages/OrdersPage.tsx';
 import { ReturnsRefunds } from './pages/ReturnsRefunds.tsx';
 import { PaymentsPage } from './pages/PaymentsPage.tsx';
 import { InvoiceCenter } from './pages/InvoiceCenter.tsx';
-import { BusinessAssistant } from './components/BusinessAssistant';
 import { ProductExchange } from './pages/ProductExchange.tsx';
 import { PublicInvoiceView } from './pages/PublicInvoiceView.tsx';
+
+// Restaurant Specific Pages
+import { RestaurantDashboard } from './pages/RestaurantDashboard';
+import { TableManagement } from './pages/TableManagement';
+import { KitchenDisplay } from './pages/KitchenDisplay';
+import { DigitalMenuBuilder } from './pages/DigitalMenuBuilder';
+import { WaiterManagement } from './pages/WaiterManagement';
+import { Reservations } from './pages/Reservations';
+import { RecipeManagement } from './pages/RecipeManagement';
+import { OnlineOrders } from './pages/OnlineOrders';
+import { RestaurantReports } from './pages/RestaurantReports';
+import { PublicQRMenu } from './pages/PublicQRMenu';
 
 
 // Private Route Guard Component
@@ -47,6 +58,12 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
+const MainDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const isRestaurant = user?.businessType === 'Restaurant' || user?.businessType === 'Cafe';
+  return isRestaurant ? <RestaurantDashboard /> : <Dashboard />;
+};
+
 // Main Layout Wrapper
 const DashboardLayout: React.FC = () => {
   return (
@@ -62,7 +79,7 @@ const DashboardLayout: React.FC = () => {
         {/* Dynamic Pages Area */}
         <main className="min-w-0 flex-grow overflow-x-hidden overflow-y-auto px-4 pb-8 pt-20 sm:px-6 lg:px-8">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<MainDashboard />} />
             <Route path="/billing" element={<POSBilling />} />
             <Route path="/sales-history" element={<SalesHistory />} />
             <Route path="/exchanges" element={<ProductExchange />} />
@@ -84,14 +101,20 @@ const DashboardLayout: React.FC = () => {
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
 
+            {/* Restaurant routes */}
+            <Route path="/restaurant/tables" element={<TableManagement />} />
+            <Route path="/restaurant/kitchen" element={<KitchenDisplay />} />
+            <Route path="/restaurant/menu" element={<DigitalMenuBuilder />} />
+            <Route path="/restaurant/waiters" element={<WaiterManagement />} />
+            <Route path="/restaurant/reservations" element={<Reservations />} />
+            <Route path="/restaurant/recipes" element={<RecipeManagement />} />
+            <Route path="/restaurant/online-orders" element={<OnlineOrders />} />
+            <Route path="/restaurant/reports" element={<RestaurantReports />} />
             {/* Fallback to Dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>
-
-      {/* Global Floating Business Assistant */}
-      <BusinessAssistant />
     </div>
   );
 };
@@ -106,6 +129,7 @@ export const App: React.FC = () => {
           <Route path="/register" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/invoice/:invoiceNumber" element={<PublicInvoiceView />} />
+          <Route path="/public/menu/:qrToken" element={<PublicQRMenu />} />
 
           {/* Secure Private System Routes */}
           <Route

@@ -29,9 +29,9 @@ export const SignUp: React.FC = () => {
       return;
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,15}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
-      setLocalError('Password must be 8-15 characters, include uppercase, lowercase, number, and special character');
+      setLocalError('Password must be at least 8 characters, include uppercase, lowercase, number, and special character');
       setIsLoading(false);
       return;
     }

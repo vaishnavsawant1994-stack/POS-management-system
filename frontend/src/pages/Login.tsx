@@ -13,6 +13,8 @@ export const Login: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [businessType, setBusinessType] = useState('Retail Store');
+  const [businessName, setBusinessName] = useState('My Shop');
 
   // Google Sign-In Sandbox States
   const [showGoogleSandbox, setShowGoogleSandbox] = useState(false);
@@ -108,19 +110,18 @@ export const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setLocalError(null);
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,15}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
-      setLocalError('Password must be 8-15 characters, include uppercase, lowercase, number, and special character');
+      setLocalError('Password must be at least 8 characters, include uppercase, lowercase, number, and special character');
       setIsLoading(false);
       return;
     }
 
-    const success = await login(email, password);
+    const success = await login(email, password, businessType, businessName);
     if (success) {
       navigate('/');
-    } else {
-      setLocalError('Invalid email or password. Hint: admin@pos.com / Password123!');
     }
     setIsLoading(false);
   };
@@ -249,6 +250,43 @@ export const Login: React.FC = () => {
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
+              </div>
+            </div>
+
+            {/* Business Type */}
+            <div>
+              <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-1.5">Business Type</label>
+              <div className="relative">
+                <select
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-black focus:outline-none focus:border-blue-600/60 focus:bg-white bg-slate-50/50 appearance-none cursor-pointer"
+                >
+                  <option value="Retail Store">Retail Store</option>
+                  <option value="Restaurant">Restaurant Store</option>
+                  <option value="Cafe">Cafe Shop</option>
+                  <option value="Medical Store">Medical Store</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-500">
+                  <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Business Name */}
+            <div>
+              <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-1.5">Business Name</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter business/shop name"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold text-black placeholder:text-slate-500 focus:outline-none focus:border-blue-600/60 focus:bg-white bg-slate-50/50"
+                />
               </div>
             </div>
 

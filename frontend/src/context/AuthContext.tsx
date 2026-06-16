@@ -6,6 +6,9 @@ export interface User {
   name: string;
   role: 'ADMIN' | 'MANAGER' | 'CASHIER';
   avatar?: string;
+  businessType?: string;
+  businessName?: string;
+  restaurantId?: string | null;
   branch?: { id: string; name: string } | null;
 }
 
@@ -13,7 +16,7 @@ interface AuthContextType {
   token: string | null;
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, businessType?: string, businessName?: string) => Promise<boolean>;
   googleLogin: (idToken: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
@@ -124,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [token]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, businessType?: string, businessName?: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
 
@@ -132,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, businessType, businessName }),
       });
 
       if (!response.ok) {
@@ -158,6 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: 'John Doe',
           role: 'ADMIN',
           avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&h=150&q=80',
+          businessType: businessType || 'Retail Store',
+          businessName: businessName || 'My POS Store',
+          restaurantId: 'mock-restaurant-id',
           branch: { id: 'branch-1', name: 'Main Branch' },
         });
         setIsLoading(false);

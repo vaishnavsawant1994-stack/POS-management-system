@@ -1,0 +1,1 @@
+I will view the first 800 lines of `DigitalMenuBuilder.tsx` to inspect the structure and identify components.

@@ -29,7 +29,9 @@ export const Sidebar: React.FC = () => {
     navigate('/login');
   };
 
-  const navItems = [
+  const isRestaurant = user?.businessType === 'Restaurant' || user?.businessType === 'Cafe';
+
+  const retailNavItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'POS Billing', path: '/billing', icon: Calculator },
     { name: 'Sales History', path: '/sales-history', icon: History },
@@ -47,6 +49,21 @@ export const Sidebar: React.FC = () => {
     { name: 'Reports', path: '/reports', icon: BarChart2 },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
+
+  const restaurantNavItems = [
+    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Tables & Billing', path: '/restaurant/tables', icon: Calculator },
+    { name: 'Kitchen Display', path: '/restaurant/kitchen', icon: Archive },
+    { name: 'Digital Menu', path: '/restaurant/menu', icon: Layers },
+    { name: 'Waiters Management', path: '/restaurant/waiters', icon: Users },
+    { name: 'Reservations', path: '/restaurant/reservations', icon: UserCheck },
+    { name: 'Recipes & Ingredients', path: '/restaurant/recipes', icon: Package },
+    { name: 'Online Channels', path: '/restaurant/online-orders', icon: ShoppingBag },
+    { name: 'Restaurant Reports', path: '/restaurant/reports', icon: BarChart2 },
+    { name: 'Settings', path: '/settings', icon: Settings },
+  ];
+
+  const navItems = isRestaurant ? restaurantNavItems : retailNavItems;
 
 
   return (

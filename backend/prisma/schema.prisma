@@ -1046,6 +1046,7 @@ model KitchenOrder {
   items             KitchenOrderItem[]
   onlineOrder       RestaurantOnlineOrder?
   feedback          RestaurantFeedback?
+  serviceTasks      ServiceTask[]
 
   @@map("kitchen_orders")
 }
@@ -1091,16 +1092,21 @@ model RestaurantReservation {
 }
 
 model RestaurantWaiter {
-  id             String     @id @default(uuid())
-  restaurantId   String
-  name           String
-  mobile         String
-  status         String     @default("ACTIVE") // ACTIVE, INACTIVE
-  ordersServed   Int        @default(0)
-  salesHandled   Float      @default(0.0)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  id                String                  @id @default(uuid())
+  restaurantId      String
+  employeeCode      String?                 @map("employee_code")
+  email             String?
+  name              String
+  mobile            String
+  status            String                  @default("ACTIVE") // ACTIVE, INACTIVE
+  ordersServed      Int                     @default(0)
+  salesHandled      Float                   @default(0.0)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  restaurant        Restaurant              @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tableAssignments  WaiterTableAssignment[]
+  serviceTasks      ServiceTask[]
+  notifications     WaiterNotification[]
 
   @@map("restaurant_waiters")
 }
@@ -1149,3 +1155,94 @@ model RestaurantOffer {
 
   @@map("restaurant_offers")
 }
+
+model WaiterTableAssignment {
+  id          String           @id @default(uuid())
+  waiterId    String           @map("waiter_id")
+  tableNumber String           @map("table_number")
+  businessId  String           @map("business_id")
+  waiter      RestaurantWaiter @relation(fields: [waiterId], references: [id], onDelete: Cascade)
+
+  @@unique([waiterId, tableNumber])
+  @@map("waiter_table_assignments")
+}
+
+model ServiceTask {
+  id           String            @id @default(uuid())
+  orderId      String            @map("order_id")
+  tableNumber  String            @map("table_number")
+  waiterId     String?           @map("waiter_id")
+  status       String            @default("ready") // ready, picked_up, serving, served
+  assignedAt   DateTime          @default(now()) @map("assigned_at")
+  pickedUpAt   DateTime?         @map("picked_up_at")
+  servedAt     DateTime?         @map("served_at")
+  waiter       RestaurantWaiter? @relation(fields: [waiterId], references: [id], onDelete: SetNull)
+  kitchenOrder KitchenOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("service_tasks")
+}
+
+model WaiterNotification {
+  id        String           @id @default(uuid())
+  waiterId  String           @map("waiter_id")
+  orderId   String           @map("order_id")
+  title     String
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+  waiter    RestaurantWaiter @relation(fields: [waiterId], references: [id], onDelete: Cascade)
+
+  @@map("waiter_notifications")
+}
+
+model TableTransfer {
+  id            String   @id @default(uuid())
+  tableNumber   String   @map("table_number")
+  fromWaiterId  String   @map("from_waiter_id")
+  toWaiterId    String   @map("to_waiter_id")
+  transferredBy String   @map("transferred_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("table_transfers")
+}
+
+model BillingHistory {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @map("invoice_number")
+  tableNumber   String   @map("table_number")
+  orderSource   String   @map("order_source")
+  paymentMode   String   @map("payment_mode")
+  items         String   @map("items")
+  totalAmount   Float    @map("total_amount")
+  gst           Float
+  waiterName    String   @map("waiter_name")
+  date          String
+  time          String
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("billing_history")
+}
+
+model PaymentHistory {
+  id          String   @id @default(uuid())
+  orderId     String   @map("order_id")
+  amount      Float
+  paymentMode String   @map("payment_mode")
+  paidBy      String?  @map("paid_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("payment_history")
+}
+
+model TableAssignmentHistory {
+  id             String   @id @default(uuid())
+  tableNumber    String   @map("table_number")
+  previousWaiter String?  @map("previous_waiter")
+  currentWaiter  String   @map("current_waiter")
+  assignedBy     String   @map("assigned_by")
+  assignedAt     DateTime @default(now()) @map("assigned_at")
+
+  @@map("table_assignment_history")
+}
+
+

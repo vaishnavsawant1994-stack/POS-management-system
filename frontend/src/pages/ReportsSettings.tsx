@@ -661,8 +661,8 @@ export const Reports: React.FC = () => {
                   }`}
               >
                 <div className={`p-2.5 rounded-xl transition-colors ${isActive
-                    ? `bg-${tab.theme}-100 text-${tab.theme}-700`
-                    : 'bg-slate-100 text-black group-hover:bg-slate-200 group-hover:text-black'
+                  ? `bg-${tab.theme}-100 text-${tab.theme}-700`
+                  : 'bg-slate-100 text-black group-hover:bg-slate-200 group-hover:text-black'
                   }`}>
                   <Icon className="w-5 h-5" />
                 </div>
@@ -828,8 +828,8 @@ export const Reports: React.FC = () => {
                             setActiveFilter(tab.filter);
                           }}
                           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${isActive
-                              ? 'bg-blue-600 text-white shadow-sm'
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
                             }`}
                         >
                           {tab.label}
@@ -967,8 +967,8 @@ export const Reports: React.FC = () => {
                           key={mode}
                           onClick={() => setSelectedPaymentMode(mode)}
                           className={`px-4 py-1.5 text-xs rounded-xl font-extrabold border-2 transition-all cursor-pointer ${selectedPaymentMode === mode
-                              ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                              : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-black'
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-black'
                             }`}
                         >
                           {mode}
@@ -1171,8 +1171,8 @@ export const Reports: React.FC = () => {
                           key={st}
                           onClick={() => setSelectedStockStatus(st)}
                           className={`px-3 py-1.5 text-xs rounded-xl font-extrabold border-2 transition-all cursor-pointer ${selectedStockStatus === st
-                              ? 'bg-orange-600 border-orange-600 text-white shadow-sm'
-                              : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-black'
+                            ? 'bg-orange-600 border-orange-600 text-white shadow-sm'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-black'
                             }`}
                         >
                           {st}
@@ -1216,10 +1216,10 @@ export const Reports: React.FC = () => {
                               </td>
                               <td className="px-5 py-3 text-center font-normal">
                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold whitespace-nowrap inline-block ${row.status === 'In Stock'
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : row.status === 'Low Stock'
-                                      ? 'bg-amber-50 text-amber-700'
-                                      : 'bg-red-50 text-red-700'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : row.status === 'Low Stock'
+                                    ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-red-50 text-red-700'
                                   }`}>
                                   {row.status}
                                 </span>
@@ -1507,8 +1507,8 @@ export const Reports: React.FC = () => {
                           key={st}
                           onClick={() => setSelectedPOStatus(st)}
                           className={`px-3 py-1.5 text-xs rounded-xl font-extrabold border-2 transition-all cursor-pointer ${selectedPOStatus === st
-                              ? 'bg-amber-600 border-amber-600 text-white shadow-sm'
-                              : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-black'
+                            ? 'bg-amber-600 border-amber-600 text-white shadow-sm'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-black'
                             }`}
                         >
                           {st}
@@ -1832,6 +1832,7 @@ export const Settings: React.FC = () => {
   const [website, setWebsite] = useState('https://societysupermarket.com');
   const [shopLogo, setShopLogo] = useState('');
   const [shopBanner, setShopBanner] = useState('');
+  const [footerMessage, setFooterMessage] = useState('Thank you for visiting our store');
 
   // 2. Billing States
   const [autoGenInvoice, setAutoGenInvoice] = useState(true);
@@ -1944,6 +1945,7 @@ export const Settings: React.FC = () => {
         if (parsed.shopBanner) setShopBanner(parsed.shopBanner);
         if (parsed.printerSettings) setPrinterSettings(parsed.printerSettings);
         if (parsed.taxSettings) setGstRate(parsed.taxSettings);
+        if (parsed.footerMessage) setFooterMessage(parsed.footerMessage);
 
         // Load new values if present
         if (parsed.autoGenInvoice !== undefined) setAutoGenInvoice(parsed.autoGenInvoice);
@@ -2020,6 +2022,7 @@ export const Settings: React.FC = () => {
         setMobileNumber(settingsData.mobile || '+91 99999 88888');
         setShopEmail(settingsData.email || 'info@societysupermarket.com');
         setShopLogo(settingsData.logo || '');
+        setFooterMessage(settingsData.footerMessage || 'Thank you for visiting our store');
         setWhatsappBusinessNumber(settingsData.whatsappBusinessNumber || '');
         setWhatsappApiProvider(settingsData.whatsappApiProvider || 'Twilio');
         setWhatsappApiKey(settingsData.whatsappApiKey || '');
@@ -2040,7 +2043,7 @@ export const Settings: React.FC = () => {
       mobile: mobileNumber,
       email: shopEmail,
       logo: shopLogo,
-      footerMessage: 'Thank you for visiting our store',
+      footerMessage,
       whatsappNumber: whatsappBusinessNumber,
       theme: 'light',
       printerSettings,
@@ -2073,6 +2076,7 @@ export const Settings: React.FC = () => {
         website,
         shopLogo: saved.logo || shopLogo,
         shopBanner,
+        footerMessage: saved.footerMessage || footerMessage,
 
         autoGenInvoice,
         autoGenBill,
@@ -2200,8 +2204,8 @@ export const Settings: React.FC = () => {
               key={label}
               onClick={() => setActiveTab(label)}
               className={`flex w-full items-center gap-3.5 rounded-xl px-3.5 py-3 text-left transition-colors ${activeTab === label
-                  ? 'bg-slate-100 text-black border-l-4 border-l-emerald-600 font-bold'
-                  : 'text-black/75 hover:bg-slate-50 font-normal'
+                ? 'bg-slate-100 text-black border-l-4 border-l-emerald-600 font-bold'
+                : 'text-black/75 hover:bg-slate-50 font-normal'
                 }`}
             >
               <span className={`p-1.5 rounded-lg shrink-0 ${colorClass}`}>
@@ -2335,13 +2339,35 @@ export const Settings: React.FC = () => {
                     />
                   </div>
 
-                  <div className="space-y-1 text-left lg:col-span-3">
+                  <div className="space-y-1 text-left lg:col-span-2">
                     <label className="text-xs font-bold text-black block mb-1">Website (Optional)</label>
                     <input
                       type="url"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
                       placeholder="https://example.com"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-normal text-black focus:bg-white focus:outline-none focus:border-black transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1 text-left">
+                    <label className="text-xs font-bold text-black block mb-1">WhatsApp Business Number</label>
+                    <input
+                      type="text"
+                      value={whatsappBusinessNumber}
+                      onChange={(e) => setWhatsappBusinessNumber(e.target.value)}
+                      placeholder="e.g. +91 99999 88888"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-normal text-black focus:bg-white focus:outline-none focus:border-black transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1 text-left lg:col-span-3">
+                    <label className="text-xs font-bold text-black block mb-1">Receipt Footer Message</label>
+                    <input
+                      type="text"
+                      value={footerMessage}
+                      onChange={(e) => setFooterMessage(e.target.value)}
+                      placeholder="Thank you for visiting our store"
                       className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm font-normal text-black focus:bg-white focus:outline-none focus:border-black transition"
                     />
                   </div>

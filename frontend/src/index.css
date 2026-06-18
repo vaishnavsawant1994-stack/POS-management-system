@@ -349,6 +349,7 @@ body.is-invoice-view main {
   .no-print {
     display: none !important;
   }
+
   body.is-invoice-view main {
     padding: 0 !important;
   }

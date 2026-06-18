@@ -20,6 +20,12 @@ import {
   updateOrderStatus,
   getWaiters,
   createWaiter,
+  updateWaiterAssignments,
+  getServiceTasks,
+  pickupServiceTask,
+  serveServiceTask,
+  getWaiterNotifications,
+  readWaiterNotification,
   getReservations,
   createReservation,
   updateReservationStatus,
@@ -33,7 +39,15 @@ import {
   submitFeedback,
   getReports,
   getKitchenOrderById,
-  handleRealtime
+  handleRealtime,
+  getWaiterTransfers,
+  transferWaiterTable,
+  createKitchenOrder,
+  getRestaurantBillingHistory,
+  getTableHistoryLogs,
+  assignTable,
+  unassignTable,
+  getAssignmentHistory
 } from '../controllers/restaurant.controller';
 
 const router = Router();
@@ -66,12 +80,30 @@ router.post('/public/payment/create', createPublicPaymentOrder);
 
 // Kitchen Display System
 router.get('/orders', getKitchenOrders);
+router.post('/orders', createKitchenOrder);
 router.get('/orders/:id', getKitchenOrderById);
 router.put('/orders/:id/status', updateOrderStatus);
+router.get('/billing-history', getRestaurantBillingHistory);
+router.get('/table-history/:tableNumber', getTableHistoryLogs);
 
 // Waitstaff
 router.get('/waiters', getWaiters);
 router.post('/waiters', createWaiter);
+router.post('/waiters/:id/assignments', updateWaiterAssignments);
+router.get('/waiters/transfers', getWaiterTransfers);
+router.post('/waiters/transfer', transferWaiterTable);
+router.post('/waiters/assign', assignTable);
+router.post('/waiters/unassign', unassignTable);
+router.get('/waiters/assignment-history', getAssignmentHistory);
+
+// Service Tasks
+router.get('/service-tasks', getServiceTasks);
+router.put('/service-tasks/:id/pickup', pickupServiceTask);
+router.put('/service-tasks/:id/serve', serveServiceTask);
+
+// Waitstaff Notifications
+router.get('/waiter-notifications', getWaiterNotifications);
+router.put('/waiter-notifications/:id/read', readWaiterNotification);
 
 // Reservations
 router.get('/reservations', getReservations);

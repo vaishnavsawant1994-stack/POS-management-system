@@ -5,8 +5,6 @@ import {
   Check,
   Bell,
   Loader2,
-  ChevronDown,
-  ChevronUp,
   Server
 } from 'lucide-react';
 
@@ -16,7 +14,7 @@ export const KitchenDisplay: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [newOrderAnimationIds, setNewOrderAnimationIds] = useState<string[]>([]);
   const [nowTime, setNowTime] = useState(Date.now());
-  const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>([]);
+  // Removed expandedOrderIds state to resolve unused warning
   const [activeTab, setActiveTab] = useState<'NEW' | 'PREPARING' | 'READY'>('NEW');
   const [activeReadyAlert, setActiveReadyAlert] = useState<{ table: string; orderId: string } | null>(null);
   const [delayedUploadedIds, setDelayedUploadedIds] = useState<string[]>([]);
@@ -411,8 +409,7 @@ export const KitchenDisplay: React.FC = () => {
           setOrders(prev => {
             if (prev.some(o => o.id === newOrder.id)) return prev;
             playAlertSound();
-            // Highlight row and trigger banner
-            setNewOrderBanner(newOrder);
+            showToast('New Order Arrived', `Table: ${newOrder.table?.tableNumber || 'Takeaway'}`, 'info');
             setNewOrderAnimationIds(ani => [...ani, newOrder.id]);
             setTimeout(() => {
               setNewOrderAnimationIds(ani => ani.filter(id => id !== newOrder.id));
@@ -500,12 +497,7 @@ export const KitchenDisplay: React.FC = () => {
     return diffMs > expectedMins * 60 * 1000;
   };
 
-  // Toggle expanded row state
-  const toggleExpand = (orderId: string) => {
-    setExpandedOrderIds(prev =>
-      prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
-    );
-  };
+  // Removed unused toggleExpand function
 
   // Contextual live timer labels
   const getTimingLabel = (order: any) => {

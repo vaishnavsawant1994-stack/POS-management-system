@@ -47,7 +47,11 @@ import {
   getTableHistoryLogs,
   assignTable,
   unassignTable,
-  getAssignmentHistory
+  getAssignmentHistory,
+  editWaiter,
+  deleteWaiter,
+  editTable,
+  deleteTable
 } from '../controllers/restaurant.controller';
 
 const router = Router();
@@ -61,6 +65,8 @@ router.get('/dashboard', getDashboardMetrics);
 router.get('/tables', getTables);
 router.post('/tables', createTable);
 router.put('/tables/:id/status', updateTableStatus);
+router.put('/tables/:id', editTable);
+router.delete('/tables/:id', deleteTable);
 router.post('/tables/transfer', transferTable);
 router.post('/tables/merge', mergeTables);
 router.post('/tables/split', splitTableBill);
@@ -89,6 +95,8 @@ router.get('/table-history/:tableNumber', getTableHistoryLogs);
 // Waitstaff
 router.get('/waiters', getWaiters);
 router.post('/waiters', createWaiter);
+router.put('/waiters/:id', editWaiter);
+router.delete('/waiters/:id', deleteWaiter);
 router.post('/waiters/:id/assignments', updateWaiterAssignments);
 router.get('/waiters/transfers', getWaiterTransfers);
 router.post('/waiters/transfer', transferWaiterTable);

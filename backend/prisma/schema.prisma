@@ -1098,6 +1098,7 @@ model RestaurantWaiter {
   email             String?
   name              String
   mobile            String
+  role              String                  @default("Waiter")
   status            String                  @default("ACTIVE") // ACTIVE, INACTIVE
   ordersServed      Int                     @default(0)
   salesHandled      Float                   @default(0.0)
@@ -1243,6 +1244,20 @@ model TableAssignmentHistory {
   assignedAt     DateTime @default(now()) @map("assigned_at")
 
   @@map("table_assignment_history")
+}
+
+model AuditHistory {
+  id         String   @id @default(uuid())
+  action     String   // "DELETE_WAITER" or "DELETE_TABLE"
+  targetId   String   @map("target_id")
+  targetName String   @map("target_name")
+  deletedBy  String   @map("deleted_by")
+  date       String
+  time       String
+  reason     String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_history")
 }
 
 

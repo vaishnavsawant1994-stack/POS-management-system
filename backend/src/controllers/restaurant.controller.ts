@@ -930,17 +930,19 @@ export const getWaiters = async (req: Request, res: Response) => {
 };
 
 export const createWaiter = async (req: Request, res: Response) => {
-  const { restaurantId, name, mobile, employeeCode, email } = req.body;
+  const { restaurantId, name, mobile, role, employeeCode } = req.body;
+  if (!mobile || !/^\d{10}$/.test(mobile)) {
+    return res.status(400).json({ error: 'Mobile number must contain exactly 10 digits.' });
+  }
   try {
-    const code = employeeCode || `WT${Math.floor(100 + Math.random() * 900)}`;
     const waiter = await prisma.restaurantWaiter.create({
       data: {
         restaurantId,
         name,
         mobile,
-        employeeCode: code,
-        email: email || `${name.toLowerCase().replace(/\s+/g, '')}@restaurant.com`,
-        status: 'ACTIVE'
+        role: role || 'Waiter',
+        status: 'ACTIVE',
+        employeeCode: employeeCode || undefined
       }
     });
     return res.status(201).json(waiter);
@@ -1347,9 +1349,17 @@ export const assignTable = async (req: Request, res: Response) => {
       include: { waiter: true }
     });
 
+    let previousWaiterName = "None";
     if (existing) {
-      return res.status(400).json({
-        error: `Table is already assigned to ${existing.waiter.name}. Admin must unassign first.`
+      if (existing.waiterId === waiterId) {
+        return res.status(200).json({ message: 'Table already assigned to this waiter' });
+      }
+      previousWaiterName = existing.waiter.name;
+      // Delete previous table assignments first to keep ownership unique
+      await prisma.waiterTableAssignment.deleteMany({
+        where: {
+          tableNumber: { in: lookupNumbers }
+        }
       });
     }
 
@@ -1360,21 +1370,34 @@ export const assignTable = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Waiter not found' });
     }
 
-    const dataToInsert = lookupNumbers.map(num => ({
-      waiterId,
-      tableNumber: num,
-      businessId: waiter.restaurantId
-    }));
+    const uniqueLookupNumbers = Array.from(new Set(lookupNumbers));
 
-    await prisma.waiterTableAssignment.createMany({
-      data: dataToInsert,
-      skipDuplicates: true
+    const existingUserAssignments = await prisma.waiterTableAssignment.findMany({
+      where: {
+        waiterId,
+        tableNumber: { in: uniqueLookupNumbers }
+      }
     });
+    const existingTableNumbers = new Set(existingUserAssignments.map(a => a.tableNumber));
+    const toInsert = uniqueLookupNumbers.filter(num => !existingTableNumbers.has(num));
+
+    if (toInsert.length > 0) {
+      const dataToInsert = toInsert.map(num => ({
+        waiterId,
+        tableNumber: num,
+        businessId: waiter.restaurantId
+      }));
+
+      await prisma.waiterTableAssignment.createMany({
+        data: dataToInsert,
+        skipDuplicates: true
+      });
+    }
 
     await prisma.tableAssignmentHistory.create({
       data: {
         tableNumber: cleanTableNum,
-        previousWaiter: "None",
+        previousWaiter: previousWaiterName,
         currentWaiter: waiter.name,
         assignedBy: "Admin"
       }
@@ -1971,6 +1994,227 @@ export const getTableHistoryLogs = async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' }
     });
     return res.status(200).json(bills);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const editWaiter = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, mobile, role, status, employeeCode } = req.body;
+  if (!mobile || !/^\d{10}$/.test(mobile)) {
+    return res.status(400).json({ error: 'Mobile number must contain exactly 10 digits.' });
+  }
+  try {
+    const waiter = await prisma.restaurantWaiter.update({
+      where: { id },
+      data: {
+        name,
+        mobile,
+        role: role || undefined,
+        status: status || undefined,
+        employeeCode: employeeCode === null ? null : (employeeCode || undefined)
+      }
+    });
+    return res.status(200).json(waiter);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteWaiter = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { transferToWaiterId, reason } = req.body;
+  try {
+    const waiter = await prisma.restaurantWaiter.findUnique({
+      where: { id }
+    });
+    if (!waiter) {
+      return res.status(404).json({ error: 'Waiter not found' });
+    }
+
+    const assignments = await prisma.waiterTableAssignment.findMany({
+      where: { waiterId: id }
+    });
+
+    if (transferToWaiterId && transferToWaiterId !== 'remove') {
+      const targetWaiter = await prisma.restaurantWaiter.findUnique({
+        where: { id: transferToWaiterId }
+      });
+      if (!targetWaiter) {
+        return res.status(404).json({ error: 'Target waiter for transfer not found' });
+      }
+
+      // Transfer assignments
+      for (const assignment of assignments) {
+        // Check if target waiter already has this table assigned
+        const alreadyAssigned = await prisma.waiterTableAssignment.findFirst({
+          where: { waiterId: transferToWaiterId, tableNumber: assignment.tableNumber }
+        });
+        if (!alreadyAssigned) {
+          await prisma.waiterTableAssignment.update({
+            where: { id: assignment.id },
+            data: { waiterId: transferToWaiterId }
+          });
+        } else {
+          // Delete the redundant assignment
+          await prisma.waiterTableAssignment.delete({
+            where: { id: assignment.id }
+          });
+        }
+
+        await prisma.tableAssignmentHistory.create({
+          data: {
+            tableNumber: assignment.tableNumber,
+            previousWaiter: waiter.name,
+            currentWaiter: targetWaiter.name,
+            assignedBy: "Admin"
+          }
+        });
+      }
+    } else {
+      // Remove assignments
+      for (const assignment of assignments) {
+        await prisma.tableAssignmentHistory.create({
+          data: {
+            tableNumber: assignment.tableNumber,
+            previousWaiter: waiter.name,
+            currentWaiter: "None",
+            assignedBy: "Admin"
+          }
+        });
+      }
+      await prisma.waiterTableAssignment.deleteMany({
+        where: { waiterId: id }
+      });
+    }
+
+    // Delete waiter
+    await prisma.restaurantWaiter.delete({
+      where: { id }
+    });
+
+    // Write Audit Log
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0];
+    const auditId = require('crypto').randomUUID();
+
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO audit_history (id, action, target_id, target_name, deleted_by, date, time, reason, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+      auditId,
+      'DELETE_WAITER',
+      id,
+      waiter.name,
+      'Admin',
+      dateStr,
+      timeStr,
+      reason || 'Staff Resigned/No longer working'
+    );
+
+    broadcast('NOTIFICATION', {
+      type: 'TABLE_ASSIGNMENT_CHANGE',
+      message: `Waiter ${waiter.name} deleted.`
+    });
+
+    return res.status(200).json({ message: 'Waiter deleted successfully' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const editTable = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { tableNumber, capacity } = req.body;
+  try {
+    const table = await prisma.restaurantTable.update({
+      where: { id },
+      data: {
+        tableNumber,
+        capacity: Number(capacity) || 4
+      }
+    });
+    return res.status(200).json(table);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteTable = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  try {
+    const table = await prisma.restaurantTable.findUnique({
+      where: { id }
+    });
+    if (!table) {
+      return res.status(404).json({ error: 'Table not found' });
+    }
+
+    const cleanTableNum = table.tableNumber.trim();
+    const digitMatch = cleanTableNum.match(/\d+/);
+    const digit = digitMatch ? digitMatch[0] : null;
+    const lookupNumbers = [cleanTableNum];
+    if (digit) {
+      lookupNumbers.push(digit);
+      lookupNumbers.push(`Table ${digit}`);
+    }
+
+    // Find existing assignments to log previous waiter
+    const assignments = await prisma.waiterTableAssignment.findMany({
+      where: { tableNumber: { in: lookupNumbers } },
+      include: { waiter: true }
+    });
+
+    let previousWaiter = "None";
+    if (assignments.length > 0) {
+      previousWaiter = assignments[0].waiter.name;
+    }
+
+    // Delete assignments
+    await prisma.waiterTableAssignment.deleteMany({
+      where: { tableNumber: { in: lookupNumbers } }
+    });
+
+    // Write assignment history
+    await prisma.tableAssignmentHistory.create({
+      data: {
+        tableNumber: cleanTableNum,
+        previousWaiter,
+        currentWaiter: "None",
+        assignedBy: "Admin"
+      }
+    });
+
+    // Delete table
+    await prisma.restaurantTable.delete({
+      where: { id }
+    });
+
+    // Write Audit Log
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0];
+    const auditId = require('crypto').randomUUID();
+
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO audit_history (id, action, target_id, target_name, deleted_by, date, time, reason, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+      auditId,
+      'DELETE_TABLE',
+      id,
+      table.tableNumber,
+      'Admin',
+      dateStr,
+      timeStr,
+      reason || 'Removed from layout'
+    );
+
+    broadcast('NOTIFICATION', {
+      type: 'TABLE_ASSIGNMENT_CHANGE',
+      message: `Table ${table.tableNumber} deleted.`
+    });
+
+    return res.status(200).json({ message: 'Table deleted successfully' });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }

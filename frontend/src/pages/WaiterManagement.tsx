@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  Plus,
   Loader2
 } from 'lucide-react';
 
@@ -19,7 +18,6 @@ export const WaiterManagement: React.FC = () => {
   const { user, apiRequest } = useAuth();
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [tables, setTables] = useState<any[]>([]);
-  const [allTables, setAllTables] = useState<any[]>([]);
   
   const [selectedWaiter, setSelectedWaiter] = useState<Waiter | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,7 +87,6 @@ export const WaiterManagement: React.FC = () => {
         }
         const data = await apiRequest(`/restaurant/tables?restaurantId=${user?.restaurantId || 'mock-id'}`);
         if (Array.isArray(data)) {
-          setAllTables(data);
           setTables(data.filter((t: any) => t.status !== 'DEACTIVATED'));
         }
       } catch (err) {
@@ -102,7 +99,6 @@ export const WaiterManagement: React.FC = () => {
     try {
       const data = await apiRequest(`/restaurant/tables?restaurantId=${user?.restaurantId || 'mock-id'}`);
       if (Array.isArray(data)) {
-        setAllTables(data);
         setTables(data.filter((t: any) => t.status !== 'DEACTIVATED'));
         await ensureDefaultTables(data);
       }
@@ -126,7 +122,7 @@ export const WaiterManagement: React.FC = () => {
 
   const handleAddWaiter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !mobile) return;
+    if (!name || mobile.length !== 10) return;
     const resolvedRestaurantId = user?.restaurantId || waiters[0]?.restaurantId || tables[0]?.restaurantId || '8853ae4b-561b-4abf-9d8f-57b353291afd';
     try {
       await apiRequest('/restaurant/waiters', {
@@ -150,55 +146,7 @@ export const WaiterManagement: React.FC = () => {
     }
   };
 
-  const handleAddTableAuto = async () => {
-    const activeAndDeactivatedNums = allTables.map(t => {
-      const num = parseInt(t.tableNumber.replace(/\D/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    }).filter(n => n > 0);
 
-    let nextNum = 1;
-    while (activeAndDeactivatedNums.includes(nextNum)) {
-      nextNum++;
-    }
-    const nextTableNumber = `Table ${nextNum}`;
-
-    const existingDeactivated = allTables.find(
-      t => {
-        const existNum = t.tableNumber.replace(/\D/g, '');
-        return existNum === String(nextNum) && t.status === 'DEACTIVATED';
-      }
-    );
-
-    const resolvedRestaurantId = user?.restaurantId || tables[0]?.restaurantId || waiters[0]?.restaurantId || '8853ae4b-561b-4abf-9d8f-57b353291afd';
-
-    try {
-      setActioning(true);
-      if (existingDeactivated) {
-        await apiRequest(`/restaurant/tables/${existingDeactivated.id}/status`, {
-          method: 'PUT',
-          body: JSON.stringify({ status: 'AVAILABLE' })
-        });
-      } else {
-        await apiRequest('/restaurant/tables', {
-          method: 'POST',
-          body: JSON.stringify({
-            restaurantId: resolvedRestaurantId,
-            tableNumber: nextTableNumber,
-            tableName: null,
-            capacity: 4,
-            floor: 'Ground Floor',
-            status: 'AVAILABLE'
-          })
-        });
-      }
-      await loadData(false);
-    } catch (err) {
-      console.error(err);
-      addToast('Failed to create table', 'error');
-    } finally {
-      setActioning(false);
-    }
-  };
 
   const handleTableClick = async (table: any) => {
     const assignedWaiter = getAssignedWaiterForTable(table.tableNumber);
@@ -208,23 +156,8 @@ export const WaiterManagement: React.FC = () => {
         if (assignedWaiter.id === selectedWaiter.id) {
           await handleUnassignTable(table.tableNumber);
         } else {
-          setActioning(true);
-          try {
-            await apiRequest('/restaurant/waiters/unassign', {
-              method: 'POST',
-              body: JSON.stringify({ tableNumber: table.tableNumber })
-            });
-            await apiRequest('/restaurant/waiters/assign', {
-              method: 'POST',
-              body: JSON.stringify({ waiterId: selectedWaiter.id, tableNumber: table.tableNumber })
-            });
-            await loadData(false);
-          } catch (err: any) {
-            console.error(err);
-            addToast(err.message || 'Error reassigning table', 'error');
-          } finally {
-            setActioning(false);
-          }
+          // Reassign directly: backend automatically handles unassignment from the previous waiter!
+          await handleAssignTableDirect(table.tableNumber, selectedWaiter.id);
         }
       } else {
         await handleAssignTableDirect(table.tableNumber, selectedWaiter.id);
@@ -325,15 +258,6 @@ export const WaiterManagement: React.FC = () => {
             Assign staff to tables directly. Select a waiter, then click any table.
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-normal py-2 px-3.5 rounded-lg flex items-center gap-1.5 text-xs uppercase tracking-wider transition-all cursor-pointer shadow-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Waiter</span>
-          </button>
-        </div>
       </div>
 
       {loading ? (
@@ -352,24 +276,38 @@ export const WaiterManagement: React.FC = () => {
             <div className="flex-1 overflow-y-auto mt-3 space-y-2 pr-1 scrollbar-none">
               {waiters.map(waiter => {
                 const isSelected = selectedWaiter?.id === waiter.id;
-                const assignedCount = waiter.tableAssignments.length;
+                
+                // Get compact table list sorted numerically, e.g. T1 | T2 | T3
+                const uniqueDigits = Array.from(new Set(
+                  waiter.tableAssignments
+                    .map(a => a.tableNumber.replace(/\D/g, ''))
+                    .filter(Boolean)
+                ));
+                const tableChips = uniqueDigits
+                  .map(d => `T${d}`)
+                  .sort((a, b) => parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10))
+                  .join(' | ');
 
                 return (
                   <div
                     key={waiter.id}
                     onClick={() => setSelectedWaiter(isSelected ? null : waiter)}
-                    className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 ${
+                    className={`px-4 py-3.5 rounded-xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-4 ${
                       isSelected 
-                        ? 'bg-neutral-50 border-black ring-1 ring-black/10 shadow-xs' 
-                        : 'bg-white border-neutral-100 hover:border-neutral-200 hover:shadow-xs'
+                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                        : 'bg-white border-neutral-200 text-black hover:border-emerald-600/40 hover:bg-neutral-50/35'
                     }`}
                   >
-                    <div className="text-left">
-                      <p className="font-bold text-black text-xs">{waiter.name}</p>
-                      <p className="text-[10px] text-neutral-500 font-normal mt-0.5">
-                        {assignedCount} {assignedCount === 1 ? 'Table' : 'Tables'} assigned
-                      </p>
-                    </div>
+                    <span className={`text-sm font-semibold truncate flex-1 ${isSelected ? 'text-white' : 'text-black'}`}>
+                      {waiter.name}
+                    </span>
+                    {tableChips && (
+                      <span className={`text-sm font-bold whitespace-nowrap overflow-x-auto scrollbar-none max-w-[150px] shrink-0 text-right ${
+                        isSelected ? 'text-white' : 'text-emerald-600'
+                      }`}>
+                        {tableChips}
+                      </span>
+                    )}
                   </div>
                 );
               })}
@@ -382,14 +320,6 @@ export const WaiterManagement: React.FC = () => {
               <h2 className="text-xs font-normal uppercase tracking-wider text-black">
                 Tables Layout
               </h2>
-              <button
-                onClick={handleAddTableAuto}
-                disabled={actioning}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-normal py-1 px-2.5 rounded-lg flex items-center gap-1 text-[10px] uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 shadow-xs"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Add Table</span>
-              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto mt-3 p-4 bg-neutral-50/40 rounded-xl border border-neutral-200/50 scrollbar-none">
@@ -469,15 +399,21 @@ export const WaiterManagement: React.FC = () => {
                   required
                   placeholder="e.g. 9876543214"
                   value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   className="w-full rounded-xl border border-neutral-200 bg-slate-50/50 px-4 py-2 text-sm font-normal text-black focus:bg-white focus:outline-none focus:border-black transition"
                 />
+                {mobile !== '' && mobile.length !== 10 && (
+                  <span className="text-rose-600 text-[10px] block mt-1">
+                    Mobile number must contain exactly 10 digits.
+                  </span>
+                )}
               </div>
 
               <div className="flex gap-2 pt-2 text-xs font-normal">
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                  disabled={mobile.length !== 10}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Register Staff
                 </button>

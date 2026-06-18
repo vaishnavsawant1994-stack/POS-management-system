@@ -23,7 +23,10 @@ import {
   Calendar,
   Menu,
   X,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trash2,
+  Pencil,
+  Plus
 } from 'lucide-react';
 
 // Structured Mock Data for ERP Reporting Engine
@@ -1817,6 +1820,189 @@ export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('Store Info');
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
+  const isRestaurant = auth.user?.businessType === 'Restaurant' || auth.user?.businessType === 'Cafe';
+  const tabs = [...settingsTabs];
+  if (isRestaurant) {
+    tabs.push(
+      ['Staff Management', 'Add, edit and delete waiters', Users, 'text-purple-600 bg-purple-50'],
+      ['Table Settings', 'Add, edit and delete tables', ClipboardList, 'text-pink-600 bg-pink-50']
+    );
+  }
+
+  // Restaurant settings states
+  const [waitersList, setWaitersList] = useState<any[]>([]);
+  const [tablesList, setTablesList] = useState<any[]>([]);
+  const [showAddWaiterModal, setShowAddWaiterModal] = useState(false);
+  const [showEditWaiterModal, setShowEditWaiterModal] = useState(false);
+  const [showDeleteWaiterModal, setShowDeleteWaiterModal] = useState(false);
+  const [showAddTableModal, setShowAddTableModal] = useState(false);
+  const [showEditTableModal, setShowEditTableModal] = useState(false);
+  const [showDeleteTableModal, setShowDeleteTableModal] = useState(false);
+
+  const [waiterName, setWaiterName] = useState('');
+  const [waiterMobile, setWaiterMobile] = useState('');
+  const [waiterCode, setWaiterCode] = useState('');
+  const [waiterStatus, setWaiterStatus] = useState('ACTIVE');
+  const [selectedWaiter, setSelectedWaiter] = useState<any>(null);
+  const [transferToWaiterId, setTransferToWaiterId] = useState('');
+  const [deletionReason, setDeletionReason] = useState('');
+
+  const [tableNum, setTableNum] = useState('');
+  const [tableCapacity, setTableCapacity] = useState(4);
+  const [selectedTable, setSelectedTable] = useState<any>(null);
+
+  const fetchWaitersList = async () => {
+    try {
+      const data = await auth.apiRequest(`/restaurant/waiters?restaurantId=${auth.user?.restaurantId || 'mock-id'}`);
+      if (Array.isArray(data)) {
+        setWaitersList(data);
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  const fetchTablesList = async () => {
+    try {
+      const data = await auth.apiRequest(`/restaurant/tables?restaurantId=${auth.user?.restaurantId || 'mock-id'}`);
+      if (Array.isArray(data)) {
+        setTablesList(data.filter((t: any) => t.status !== 'DEACTIVATED'));
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  };
+
+  const handleAddWaiter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waiterName || waiterMobile.length !== 10) return;
+    try {
+      await auth.apiRequest('/restaurant/waiters', {
+        method: 'POST',
+        body: JSON.stringify({
+          restaurantId: auth.user?.restaurantId || 'mock-id',
+          name: waiterName,
+          mobile: waiterMobile,
+          role: 'Waiter',
+          employeeCode: waiterCode || undefined
+        })
+      });
+      setWaiterName('');
+      setWaiterMobile('');
+      setWaiterCode('');
+      setShowAddWaiterModal(false);
+      fetchWaitersList();
+    } catch (err) {
+      alert('Failed to add waiter');
+    }
+  };
+
+  const handleEditWaiter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedWaiter || !waiterName || waiterMobile.length !== 10) return;
+    try {
+      await auth.apiRequest(`/restaurant/waiters/${selectedWaiter.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: waiterName,
+          mobile: waiterMobile,
+          role: 'Waiter',
+          status: waiterStatus,
+          employeeCode: waiterCode || undefined
+        })
+      });
+      setWaiterName('');
+      setWaiterMobile('');
+      setWaiterCode('');
+      setWaiterStatus('ACTIVE');
+      setSelectedWaiter(null);
+      setShowEditWaiterModal(false);
+      fetchWaitersList();
+    } catch (err) {
+      alert('Failed to update waiter');
+    }
+  };
+
+  const handleDeleteWaiter = async () => {
+    if (!selectedWaiter || !deletionReason) return;
+    try {
+      await auth.apiRequest(`/restaurant/waiters/${selectedWaiter.id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({
+          transferToWaiterId: transferToWaiterId || 'remove',
+          reason: deletionReason
+        })
+      });
+      setDeletionReason('');
+      setTransferToWaiterId('');
+      setSelectedWaiter(null);
+      setShowDeleteWaiterModal(false);
+      fetchWaitersList();
+    } catch (err) {
+      alert('Failed to delete waiter');
+    }
+  };
+
+  const handleAddTable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tableNum) return;
+    try {
+      await auth.apiRequest('/restaurant/tables', {
+        method: 'POST',
+        body: JSON.stringify({
+          restaurantId: auth.user?.restaurantId || 'mock-id',
+          tableNumber: tableNum,
+          capacity: Number(tableCapacity)
+        })
+      });
+      setTableNum('');
+      setTableCapacity(4);
+      setShowAddTableModal(false);
+      fetchTablesList();
+    } catch (err) {
+      alert('Failed to add table');
+    }
+  };
+
+  const handleEditTable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTable || !tableNum) return;
+    try {
+      await auth.apiRequest(`/restaurant/tables/${selectedTable.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          tableNumber: tableNum,
+          capacity: Number(tableCapacity)
+        })
+      });
+      setTableNum('');
+      setTableCapacity(4);
+      setSelectedTable(null);
+      setShowEditTableModal(false);
+      fetchTablesList();
+    } catch (err) {
+      alert('Failed to update table');
+    }
+  };
+
+  const handleDeleteTable = async () => {
+    if (!selectedTable || !deletionReason) return;
+    try {
+      await auth.apiRequest(`/restaurant/tables/${selectedTable.id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({
+          reason: deletionReason
+        })
+      });
+      setDeletionReason('');
+      setSelectedTable(null);
+      setShowDeleteTableModal(false);
+      fetchTablesList();
+    } catch (err) {
+      alert('Failed to delete table');
+    }
+  };
+
   // 1. Store Information States
   const [shopName, setShopName] = useState('SOCIETY SUPERMARKET');
   const [businessName, setBusinessName] = useState('SOCIETY SUPERMARKET RETAIL PVT. LTD.');
@@ -2035,6 +2221,16 @@ export const Settings: React.FC = () => {
     }).catch(console.error);
   }, []);
 
+  useEffect(() => {
+    if (isRestaurant) {
+      if (activeTab === 'Staff Management') {
+        fetchWaitersList();
+      } else if (activeTab === 'Table Settings') {
+        fetchTablesList();
+      }
+    }
+  }, [activeTab]);
+
   const handleSaveSettings = async () => {
     const config = {
       shopName,
@@ -2199,7 +2395,7 @@ export const Settings: React.FC = () => {
 
         {/* Navigation Sidebar Panel */}
         <aside className="lg:col-span-4 bg-white border border-slate-200 rounded-2xl p-3 shadow-sm space-y-1">
-          {settingsTabs.map(([label, desc, Icon, colorClass]) => (
+          {tabs.map(([label, desc, Icon, colorClass]) => (
             <button
               key={label}
               onClick={() => setActiveTab(label)}
@@ -2986,6 +3182,527 @@ export const Settings: React.FC = () => {
                   <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 text-left">
                     <span className="text-[10px] font-bold text-black/65 uppercase tracking-wider block">Last Backup Date</span>
                     <span className="text-sm font-bold text-black block mt-1">June 10, 2026</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Staff Management */}
+            {activeTab === 'Staff Management' && (
+              <div className="space-y-6 text-left font-['Trebuchet_MS',_sans-serif]">
+                <div className="flex justify-between items-center border-b border-neutral-200 pb-2">
+                  <h2 className="text-lg font-bold text-black uppercase tracking-wider">Staff Management</h2>
+                  <button
+                    onClick={() => {
+                      setWaiterName('');
+                      setWaiterMobile('');
+                      setShowAddWaiterModal(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-normal py-2 px-3 rounded-xl flex items-center gap-1.5 text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Waiter</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {waitersList.map(waiter => {
+                    const tableChips = waiter.tableAssignments
+                      ? waiter.tableAssignments
+                        .map((a: any) => {
+                          const d = a.tableNumber.replace(/\D/g, '');
+                          return d ? `T${d}` : '';
+                        })
+                        .filter(Boolean)
+                        .join(' | ')
+                      : '';
+
+                    return (
+                      <div key={waiter.id} className="p-4 rounded-xl border border-neutral-200 bg-white flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="font-semibold text-black text-sm flex items-center gap-2">
+                            <span>{waiter.name}</span>
+                            {waiter.employeeCode && (
+                              <span className="text-[10px] bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded font-mono font-normal tracking-wider">
+                                ID: {waiter.employeeCode}
+                              </span>
+                            )}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${waiter.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-neutral-600'
+                              }`}>
+                              {waiter.status}
+                            </span>
+                          </div>
+                          <div className="text-xs text-black mt-1 font-normal">Mobile: {waiter.mobile}</div>
+                          {tableChips && (
+                            <div className="text-xs text-emerald-600 font-bold mt-1.5">
+                              Assigned Tables: {tableChips}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedWaiter(waiter);
+                              setWaiterName(waiter.name);
+                              setWaiterMobile(waiter.mobile);
+                              setWaiterCode(waiter.employeeCode || '');
+                              setWaiterStatus(waiter.status || 'ACTIVE');
+                              setShowEditWaiterModal(true);
+                            }}
+                            className="p-2 border border-neutral-200 hover:bg-neutral-50 text-blue-600 rounded-xl transition cursor-pointer"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedWaiter(waiter);
+                              setDeletionReason('');
+                              setTransferToWaiterId('');
+                              setShowDeleteWaiterModal(true);
+                            }}
+                            className="p-2 border border-neutral-200 hover:bg-red-50 text-red-600 rounded-xl transition cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Table Settings */}
+            {activeTab === 'Table Settings' && (
+              <div className="space-y-6 text-left">
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <h2 className="text-lg font-semibold text-black uppercase tracking-wider font-sans">Table Management</h2>
+                  <button
+                    onClick={() => {
+                      setTableNum('');
+                      setTableCapacity(4);
+                      setShowAddTableModal(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-normal py-2 px-3 rounded-xl flex items-center gap-1.5 text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Table</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3 font-sans">
+                  {tablesList.map(table => (
+                    <div key={table.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/20 flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="font-semibold text-black text-sm">{table.tableNumber}</div>
+                        <div className="text-xs text-slate-500 mt-1 font-medium">Capacity: {table.capacity} Guests</div>
+                        <div className="text-[10px] mt-1.5">
+                          <span className={`px-2 py-0.5 rounded-full uppercase border font-extrabold text-[9px] ${table.status === 'AVAILABLE' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-slate-100 border-slate-300 text-slate-700'
+                            }`}>
+                            {table.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedTable(table);
+                            setTableNum(table.tableNumber);
+                            setTableCapacity(table.capacity);
+                            setShowEditTableModal(true);
+                          }}
+                          className="p-2 border border-slate-200 hover:bg-slate-50 text-blue-600 rounded-xl transition cursor-pointer"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedTable(table);
+                            setDeletionReason('');
+                            setShowDeleteTableModal(true);
+                          }}
+                          className="p-2 border border-slate-200 hover:bg-red-50 text-red-600 rounded-xl transition cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add Waiter Modal */}
+            {showAddWaiterModal && (
+              <div className="fixed inset-0 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 z-[999] text-left">
+                <div className="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-6 shadow-xl space-y-4 font-sans">
+                  <h3 className="text-base font-bold text-black uppercase tracking-wider border-b border-neutral-100 pb-2">Add New Waiter</h3>
+                  <form onSubmit={handleAddWaiter} className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Waiter Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={waiterName}
+                        onChange={(e) => setWaiterName(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Waiter ID *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. WT005"
+                        value={waiterCode}
+                        onChange={(e) => setWaiterCode(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Mobile Number *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 9876543210"
+                        value={waiterMobile}
+                        onChange={(e) => setWaiterMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="w-full rounded-xl border border-neutral-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                      {waiterMobile !== '' && waiterMobile.length !== 10 && (
+                        <span className="text-red-600 text-xs font-medium block mt-1">
+                          Mobile number must contain exactly 10 digits.
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddWaiterModal(false)}
+                        className="px-4 py-2 rounded-xl border border-neutral-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={waiterMobile.length !== 10 || !waiterCode.trim()}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Add Waiter
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Waiter Modal */}
+            {showEditWaiterModal && (
+              <div className="fixed inset-0 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 z-[999] text-left">
+                <div className="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-6 shadow-xl space-y-4 font-sans">
+                  <h3 className="text-base font-bold text-black uppercase tracking-wider border-b border-neutral-100 pb-2">Edit Waiter</h3>
+                  <form onSubmit={handleEditWaiter} className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Waiter Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={waiterName}
+                        onChange={(e) => setWaiterName(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Waiter ID *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. WT005"
+                        value={waiterCode}
+                        onChange={(e) => setWaiterCode(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Mobile Number *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 9876543210"
+                        value={waiterMobile}
+                        onChange={(e) => setWaiterMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="w-full rounded-xl border border-neutral-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                      {waiterMobile !== '' && waiterMobile.length !== 10 && (
+                        <span className="text-red-600 text-xs font-medium block mt-1">
+                          Mobile number must contain exactly 10 digits.
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Status *</label>
+                      <select
+                        value={waiterStatus}
+                        onChange={(e) => setWaiterStatus(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      >
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                      </select>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditWaiterModal(false)}
+                        className="px-4 py-2 rounded-xl border border-neutral-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={waiterMobile.length !== 10 || !waiterCode.trim()}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Waiter Modal */}
+            {showDeleteWaiterModal && selectedWaiter && (
+              <div className="fixed inset-0 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 z-[999] text-left">
+                <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-xl space-y-4 font-sans">
+                  <h3 className="text-base font-bold text-black uppercase tracking-wider border-b border-red-100 pb-2 text-red-600">Remove Waiter</h3>
+                  <div className="space-y-4">
+                    <p className="text-xs font-medium text-slate-600">
+                      Are you sure you want to remove <span className="font-extrabold text-black">{selectedWaiter.name}</span>? This action cannot be undone.
+                    </p>
+
+                    {/* Assignment Transfer Option */}
+                    {selectedWaiter.tableAssignments?.length > 0 && (
+                      <div className="space-y-2 p-3 bg-amber-50/60 rounded-xl border border-amber-200">
+                        <span className="text-xs font-bold text-amber-950 block">Active Assignments Found:</span>
+                        <p className="text-[10px] text-amber-800 font-medium">
+                          This waiter currently owns {selectedWaiter.tableAssignments.length} table(s). Choose what to do:
+                        </p>
+                        <div className="space-y-1.5 mt-2">
+                          <label className="flex items-center gap-2 text-xs font-semibold text-black cursor-pointer">
+                            <input
+                              type="radio"
+                              name="transferOption"
+                              checked={transferToWaiterId === '' || transferToWaiterId === 'remove'}
+                              onChange={() => setTransferToWaiterId('remove')}
+                            />
+                            <span>Remove all assignments</span>
+                          </label>
+                          <label className="flex items-center gap-2 text-xs font-semibold text-black cursor-pointer">
+                            <input
+                              type="radio"
+                              name="transferOption"
+                              checked={transferToWaiterId !== '' && transferToWaiterId !== 'remove'}
+                              onChange={() => {
+                                const otherWaiters = waitersList.filter(w => w.id !== selectedWaiter.id);
+                                if (otherWaiters.length > 0) {
+                                  setTransferToWaiterId(otherWaiters[0].id);
+                                } else {
+                                  setTransferToWaiterId('remove');
+                                  alert('No other waiters available to transfer tables.');
+                                }
+                              }}
+                            />
+                            <span>Transfer tables to another waiter</span>
+                          </label>
+
+                          {transferToWaiterId !== '' && transferToWaiterId !== 'remove' && (
+                            <select
+                              value={transferToWaiterId}
+                              onChange={(e) => setTransferToWaiterId(e.target.value)}
+                              className="w-full mt-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-black focus:outline-none"
+                            >
+                              {waitersList
+                                .filter(w => w.id !== selectedWaiter.id)
+                                .map(w => (
+                                  <option key={w.id} value={w.id}>
+                                    {w.name}
+                                  </option>
+                                ))}
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Reason for Deletion *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Resigned / Left job"
+                        value={deletionReason}
+                        onChange={(e) => setDeletionReason(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteWaiterModal(false)}
+                        className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteWaiter}
+                        disabled={!deletionReason}
+                        className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer"
+                      >
+                        Delete Waiter
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Add Table Modal */}
+            {showAddTableModal && (
+              <div className="fixed inset-0 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 z-[999] text-left">
+                <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-xl space-y-4 font-sans">
+                  <h3 className="text-base font-bold text-black uppercase tracking-wider border-b border-slate-100 pb-2">Add New Table</h3>
+                  <form onSubmit={handleAddTable} className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Table Number *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Table 21"
+                        value={tableNum}
+                        onChange={(e) => setTableNum(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Seating Capacity *</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={tableCapacity}
+                        onChange={(e) => setTableCapacity(Number(e.target.value))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddTableModal(false)}
+                        className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition cursor-pointer"
+                      >
+                        Add Table
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Table Modal */}
+            {showEditTableModal && (
+              <div className="fixed inset-0 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 z-[999] text-left">
+                <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-xl space-y-4 font-sans">
+                  <h3 className="text-base font-bold text-black uppercase tracking-wider border-b border-slate-100 pb-2">Edit Table</h3>
+                  <form onSubmit={handleEditTable} className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Table Number *</label>
+                      <input
+                        type="text"
+                        required
+                        value={tableNum}
+                        onChange={(e) => setTableNum(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Seating Capacity *</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={tableCapacity}
+                        onChange={(e) => setTableCapacity(Number(e.target.value))}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditTableModal(false)}
+                        className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition cursor-pointer"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Table Modal */}
+            {showDeleteTableModal && selectedTable && (
+              <div className="fixed inset-0 bg-black/55 backdrop-blur-xs flex items-center justify-center p-4 z-[999] text-left">
+                <div className="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-6 shadow-xl space-y-4 font-sans">
+                  <h3 className="text-base font-bold text-black uppercase tracking-wider border-b border-red-100 pb-2 text-red-600">Remove Table</h3>
+                  <div className="space-y-4">
+                    <p className="text-xs font-medium text-slate-600">
+                      Are you sure you want to remove <span className="font-extrabold text-black">{selectedTable.tableNumber}</span>? Any assignments for this table will be unassigned.
+                    </p>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-black block mb-1">Reason for Deletion *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Table removed / Broken"
+                        value={deletionReason}
+                        onChange={(e) => setDeletionReason(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-black focus:bg-white focus:outline-none focus:border-black transition"
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteTableModal(false)}
+                        className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteTable}
+                        disabled={!deletionReason}
+                        className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer"
+                      >
+                        Delete Table
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

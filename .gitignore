@@ -30,7 +30,6 @@ out/
 .docker/
 
 # Prisma
-/backend/prisma/migrations/
 /backend/node_modules/
 /frontend/node_modules/
 /POS/backend/node_modules/

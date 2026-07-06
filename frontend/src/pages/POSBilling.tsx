@@ -852,6 +852,7 @@ export const POSBilling: React.FC = () => {
       setCart([]);
       setCustomerDiscountPercent(0);
       setCurrentStep('SUCCESS');
+      window.dispatchEvent(new CustomEvent('billing-completed', { detail: { invoice: res, type: 'retail' } }));
       setWhatsappStatus('SENT');
       setActiveHeldBillId(null);
       const dbHeld = await auth.apiRequest('/billing/resume');
@@ -896,6 +897,7 @@ export const POSBilling: React.FC = () => {
       setCart([]);
       setCustomerDiscountPercent(0);
       setCurrentStep('SUCCESS');
+      window.dispatchEvent(new CustomEvent('billing-completed', { detail: { invoice: mockInvoice, type: 'retail', offline: true } }));
       setWhatsappStatus('SENT');
       setActiveHeldBillId(null);
       showToast('Order saved offline successfully!', 'success');
@@ -1162,6 +1164,7 @@ export const POSBilling: React.FC = () => {
         console.warn('Failed to refresh tables after settlement', err);
       }
       setCurrentStep('SUCCESS');
+      window.dispatchEvent(new CustomEvent('billing-completed', { detail: { invoice: res.invoice, type: 'restaurant' } }));
       showToast('Table bill settled successfully!', 'success');
     } catch (err: any) {
       showToast(err.message || 'Failed to settle table bill', 'error');

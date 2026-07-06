@@ -344,13 +344,48 @@ body.is-invoice-view main {
   max-width: 100% !important;
 }
 
-/* Print optimizations */
+/* Print optimizations & Thermal Calibration (80mm standard) */
 @media print {
-  .no-print {
+  /* Hide every part of the screen by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make only the printable receipt visible and positioned at the top left */
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible;
+  }
+
+  .print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    border: none !important;
+    background: white !important;
+    color: black !important;
+    padding: 10px !important;
+    margin: 0 !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    box-shadow: none !important;
+  }
+
+  /* Optimize layout grid headers & rows for black & white print */
+  .print-receipt .grid {
+    display: grid !important;
+  }
+
+  .print-receipt button,
+  .print-receipt .no-print {
     display: none !important;
   }
 
-  body.is-invoice-view main {
-    padding: 0 !important;
+  /* Page setup for 80mm standard rolls */
+  @page {
+    size: 80mm auto;
+    margin: 0mm;
   }
 }

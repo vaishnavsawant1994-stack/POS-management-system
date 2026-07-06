@@ -1,20 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { AttendanceWidget } from '../components/AttendanceWidget';
 import {
-  Play,
-  Check,
   Bell,
   Plus,
   Clock,
-  User,
   AlertTriangle,
   CheckCircle2,
   ChefHat,
-  RotateCcw
+  Search,
+  X,
+  History,
+  Trash2,
+  SlidersHorizontal,
+  Volume2,
+  VolumeX,
+  CheckSquare,
+  Square,
+  Calendar as CalendarIcon,
+  CheckCircle
 } from 'lucide-react';
 
-// Define Interfaces
+// ==================== DATA SCHEMAS & INTERFACES ====================
+
 interface MenuItem {
   name: string;
   price: number;
@@ -26,6 +34,7 @@ interface KitchenOrderItem {
   status: 'PENDING' | 'PREPARING' | 'READY';
   notes?: string | null;
   menuItem?: MenuItem;
+  cookingTime?: string;
 }
 
 interface Table {
@@ -38,90 +47,230 @@ interface Waiter {
 
 interface KitchenOrder {
   id: string;
+  orderNo: string;
   source?: string;
   table?: Table | null;
-  status: 'NEW' | 'ACCEPTED' | 'PREPARING' | 'PARTIALLY_READY' | 'READY' | 'COMPLETED' | 'SERVED';
-  createdAt: string;
+  status: 'NEW' | 'ACCEPTED' | 'PREPARING' | 'PARTIALLY_READY' | 'READY' | 'COMPLETED' | 'SERVED' | 'CANCELLED';
+  createdAt: string; // ISO string
   acceptedAt?: string | null;
   preparingAt?: string | null;
   readyAt?: string | null;
   waiter?: Waiter | null;
   notes?: string | null;
+  priority: 'High' | 'Medium' | 'Low';
+  estimatedPrepTime: number; // in minutes
+  customerType: 'Dine-In' | 'Takeaway';
   items: KitchenOrderItem[];
 }
+
+// ==================== DUMMY DATA FOR THE WORKSPACE ====================
 
 const INITIAL_MOCK_ORDERS: KitchenOrder[] = [
   {
     id: 'ko-1045',
+    orderNo: '#1045',
     source: 'POS',
-    table: { tableNumber: 'Table T-05' },
+    table: { tableNumber: 'Table 7' },
     status: 'PREPARING',
-    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    waiter: { name: 'Rahul' },
-    notes: 'No Onion in Burger',
+    createdAt: new Date(Date.now() - 8 * 60 * 1000 - 35 * 1000).toISOString(), // 8 mins 35 secs ago
+    waiter: { name: 'Rahul Patil' },
+    notes: 'Make it spicy, tandoor items crispy',
+    priority: 'High',
+    estimatedPrepTime: 15,
+    customerType: 'Dine-In',
     items: [
-      { id: 'koi-1', quantity: 2, status: 'PREPARING', menuItem: { name: 'Veg Burger', price: 140 } },
-      { id: 'koi-2', quantity: 1, status: 'READY', menuItem: { name: 'French Fries', price: 90 } },
-      { id: 'koi-3', quantity: 2, status: 'PREPARING', menuItem: { name: 'Cold Coffee', price: 120 } }
+      { id: 'koi-1', quantity: 2, status: 'PREPARING', menuItem: { name: 'Paneer Butter Masala', price: 240 }, cookingTime: '12m' },
+      { id: 'koi-2', quantity: 4, status: 'READY', menuItem: { name: 'Butter Naan', price: 40 }, cookingTime: '8m' },
+      { id: 'koi-3', quantity: 1, status: 'PENDING', menuItem: { name: 'Veg Biryani', price: 180 }, cookingTime: '10m' }
     ]
   },
   {
-    id: 'ko-102',
+    id: 'ko-1046',
+    orderNo: '#1046',
     source: 'QR',
-    table: { tableNumber: 'Table T-02' },
+    table: { tableNumber: 'Table 3' },
     status: 'NEW',
     createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-    waiter: { name: 'Rahul' },
+    waiter: { name: 'Akshay Kumar' },
+    notes: 'Less oil',
+    priority: 'Medium',
+    estimatedPrepTime: 12,
+    customerType: 'Dine-In',
     items: [
-      { id: 'koi-4', quantity: 1, status: 'PENDING', menuItem: { name: 'Paneer Tikka', price: 199 } },
-      { id: 'koi-5', quantity: 3, status: 'PENDING', menuItem: { name: 'Butter Naan', price: 40 } }
+      { id: 'koi-4', quantity: 1, status: 'PENDING', menuItem: { name: 'Chicken Biryani', price: 280 }, cookingTime: '15m' },
+      { id: 'koi-5', quantity: 2, status: 'PENDING', menuItem: { name: 'Coke', price: 40 }, cookingTime: '3m' }
     ]
   },
   {
-    id: 'ko-103',
-    source: 'QR',
-    table: { tableNumber: 'Table T-08' },
-    status: 'NEW',
-    createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-    waiter: { name: 'Akshay' },
+    id: 'ko-1047',
+    orderNo: '#1047',
+    source: 'POS',
+    table: { tableNumber: 'Table 12' },
+    status: 'READY',
+    createdAt: new Date(Date.now() - 22 * 60 * 1000).toISOString(),
+    waiter: { name: 'Priya Singh' },
+    notes: null,
+    priority: 'Low',
+    estimatedPrepTime: 20,
+    customerType: 'Dine-In',
     items: [
-      { id: 'koi-6', quantity: 2, status: 'PENDING', menuItem: { name: 'Chicken Biryani', price: 250 } },
-      { id: 'koi-7', quantity: 2, status: 'PENDING', menuItem: { name: 'Coke', price: 40 } }
+      { id: 'koi-6', quantity: 1, status: 'READY', menuItem: { name: 'Veg Manchurian', price: 190 }, cookingTime: '10m' },
+      { id: 'koi-7', quantity: 1, status: 'READY', menuItem: { name: 'Fried Rice', price: 160 }, cookingTime: '12m' },
+      { id: 'koi-8', quantity: 2, status: 'READY', menuItem: { name: 'Fresh Lime Soda', price: 70 }, cookingTime: '5m' }
+    ]
+  },
+  {
+    id: 'ko-1048',
+    orderNo: '#1048',
+    source: 'POS',
+    table: { tableNumber: 'Table 5' },
+    status: 'PREPARING',
+    createdAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(), // 18 mins ago (LATE!)
+    waiter: { name: 'Rahul Patil' },
+    notes: 'Urgent table, child friendly spice level',
+    priority: 'High',
+    estimatedPrepTime: 15,
+    customerType: 'Dine-In',
+    items: [
+      { id: 'koi-9', quantity: 2, status: 'PREPARING', menuItem: { name: 'Butter Chicken', price: 320 }, cookingTime: '15m' },
+      { id: 'koi-10', quantity: 3, status: 'PREPARING', menuItem: { name: 'Garlic Naan', price: 50 }, cookingTime: '8m' }
+    ]
+  },
+  {
+    id: 'ko-1049',
+    orderNo: '#1049',
+    source: 'QR',
+    table: { tableNumber: 'Table 9' },
+    status: 'NEW',
+    createdAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+    waiter: { name: 'Priya Singh' },
+    notes: 'No butter on roti',
+    priority: 'Low',
+    estimatedPrepTime: 18,
+    customerType: 'Dine-In',
+    items: [
+      { id: 'koi-11', quantity: 1, status: 'PENDING', menuItem: { name: 'Dal Makhani', price: 210 }, cookingTime: '15m' },
+      { id: 'koi-12', quantity: 4, status: 'PENDING', menuItem: { name: 'Tandoori Roti', price: 20 }, cookingTime: '6m' }
+    ]
+  },
+  {
+    id: 'ko-1050',
+    orderNo: '#1050',
+    source: 'POS',
+    table: null,
+    status: 'READY',
+    createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    waiter: null,
+    notes: 'Pack cutlery separately',
+    priority: 'Medium',
+    estimatedPrepTime: 20,
+    customerType: 'Takeaway',
+    items: [
+      { id: 'koi-13', quantity: 1, status: 'READY', menuItem: { name: 'Chili Paneer', price: 220 }, cookingTime: '12m' },
+      { id: 'koi-14', quantity: 1, status: 'READY', menuItem: { name: 'Hakka Noodles', price: 180 }, cookingTime: '10m' }
     ]
   }
 ];
 
+const getDishEmoji = (name: string): string => {
+  const lower = name.toLowerCase();
+  if (lower.includes('paneer')) return '🍛';
+  if (lower.includes('naan') || lower.includes('roti') || lower.includes('bread')) return '🫓';
+  if (lower.includes('rice') || lower.includes('biryani')) return '🍚';
+  if (lower.includes('dal') || lower.includes('curry') || lower.includes('chicken')) return '🍲';
+  if (lower.includes('manchurian') || lower.includes('noodles') || lower.includes('noodle')) return '🍜';
+  if (lower.includes('coffee') || lower.includes('soda') || lower.includes('coke') || lower.includes('lime') || lower.includes('drink')) return '🥤';
+  return '🍛';
+};
+
+const getTimingDetails = (order: KitchenOrder, nowTime: number) => {
+  const start = new Date(order.createdAt).getTime();
+  const diffMs = nowTime - start;
+  const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  const elapsedStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+  const limitMs = order.estimatedPrepTime * 60 * 1000;
+  const completionTime = new Date(start + limitMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const isLate = mins > order.estimatedPrepTime;
+
+  return {
+    elapsedStr,
+    completionTime,
+    isLate,
+    minsElapsed: mins
+  };
+};
+
 export const KitchenDisplay: React.FC = () => {
-  const { apiRequest } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<KitchenOrder[]>(INITIAL_MOCK_ORDERS);
-  const [loading, setLoading] = useState(true);
-  const [newOrderAnimationIds, setNewOrderAnimationIds] = useState<string[]>([]);
-  const [nowTime, setNowTime] = useState(Date.now());
-  const [activeTab, setActiveTab] = useState<'NEW' | 'PREPARING' | 'READY' | 'COMPLETED'>(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab') || params.get('filter');
-    if (tabParam === 'PREPARING' || tabParam === 'ACCEPTED' || tabParam === 'PARTIALLY_READY') return 'PREPARING';
-    if (tabParam === 'READY') return 'READY';
-    if (tabParam === 'COMPLETED') return 'COMPLETED';
-    return 'NEW';
+
+  // Attendance management logic (Dynamic Rollover)
+  const getAttendanceDate = (): string => {
+    let date = new Date();
+    while (true) {
+      const dateStr = date.toISOString().split('T')[0];
+      const status = localStorage.getItem(`pos_kitchen_team_attendance_status_${dateStr}`);
+      if (status !== 'CHECKED_OUT') {
+        return dateStr;
+      }
+      date.setDate(date.getDate() + 1);
+    }
+  };
+
+  const getStoredAttendanceStatus = (dateStr: string): 'CHECKED_IN' | 'CHECKED_OUT' | null => {
+    return localStorage.getItem(`pos_kitchen_team_attendance_status_${dateStr}`) as 'CHECKED_IN' | 'CHECKED_OUT' | null;
+  };
+
+  const getStoredCheckInTime = (dateStr: string): string | null => {
+    return localStorage.getItem(`pos_kitchen_team_attendance_checkin_${dateStr}`);
+  };
+
+  const getStoredCheckOutTime = (dateStr: string): string | null => {
+    return localStorage.getItem(`pos_kitchen_team_attendance_checkout_${dateStr}`);
+  };
+
+  const [activeDate, setActiveDate] = useState<string>(() => getAttendanceDate());
+  const [attendanceStatus, setAttendanceStatus] = useState<'CHECKED_IN' | 'CHECKED_OUT' | null>(() => getStoredAttendanceStatus(getAttendanceDate()));
+  const [checkInTime, setCheckInTime] = useState<string | null>(() => getStoredCheckInTime(getAttendanceDate()));
+  const [checkOutTime, setCheckOutTime] = useState<string | null>(() => getStoredCheckOutTime(getAttendanceDate()));
+
+  // Orders State
+  const [orders, setOrders] = useState<KitchenOrder[]>(() => {
+    const raw = localStorage.getItem('pos_kds_orders_list');
+    return raw ? JSON.parse(raw) : INITIAL_MOCK_ORDERS;
   });
 
-  // Compact 3s toast notifications in top-right corner
-  const [toasts, setToasts] = useState<{ id: string; table: string; kotNumber: string }[]>([]);
-  const [lastNewCount, setLastNewCount] = useState(0);
+  const [nowTime, setNowTime] = useState(Date.now());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'priority' | 'waiting'>('newest');
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Counts for each tab
-  const newCount = orders.filter(o => o.status === 'NEW').length;
-  const preparingCount = orders.filter(o => o.status === 'ACCEPTED' || o.status === 'PREPARING' || o.status === 'PARTIALLY_READY').length;
-  const readyCount = orders.filter(o => o.status === 'READY').length;
-  const completedCount = orders.filter(o => o.status === 'COMPLETED' || o.status === 'SERVED').length;
+  // Notifications
+  const [notificationQueue, setNotificationQueue] = useState<any[]>([]);
+  const [activeNotification, setActiveNotification] = useState<any | null>(null);
+  const [notificationHistory, setNotificationHistory] = useState<any[]>([]);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
-  const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:5000/api'
-    : `${window.location.protocol}//${window.location.hostname}:5000/api`;
+  // View details modal
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<KitchenOrder | null>(null);
+  const notifiedReadyOrderIds = useRef<Set<string>>(new Set());
 
+  // Auto-timers updates
+  useEffect(() => {
+    const timer = setInterval(() => setNowTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const saveOrders = (updated: KitchenOrder[]) => {
+    setOrders(updated);
+    localStorage.setItem('pos_kds_orders_list', JSON.stringify(updated));
+  };
+
+  // Sound Engine
   const playAlertSound = () => {
+    if (!soundEnabled) return;
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
@@ -132,9 +281,9 @@ export const KitchenDisplay: React.FC = () => {
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
 
-      gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
       oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.12);
+      oscillator.stop(audioCtx.currentTime + 0.1);
 
       setTimeout(() => {
         const osc2 = audioCtx.createOscillator();
@@ -143,601 +292,739 @@ export const KitchenDisplay: React.FC = () => {
         osc2.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
         osc2.connect(gain2);
         gain2.connect(audioCtx.destination);
-        gain2.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain2.gain.setValueAtTime(0.2, audioCtx.currentTime);
         osc2.start();
-        osc2.stop(audioCtx.currentTime + 0.22);
-      }, 150);
+        osc2.stop(audioCtx.currentTime + 0.2);
+      }, 120);
     } catch (e) {
-      console.warn('Audio play blocked or unsupported by browser policies');
+      console.warn('Audio context blocked.');
     }
   };
 
-  const getOrderPrepTime = (order: KitchenOrder) => {
-    if (!order.items || order.items.length === 0) return 15;
-    const times = order.items.map((it: any) => {
-      const name = (it.menuItem?.name || '').toLowerCase();
-      if (name.includes('pomfret') || name.includes('masala')) return 20;
-      if (name.includes('paneer') || name.includes('biryani') || name.includes('dal')) return 15;
-      if (name.includes('pizza') || name.includes('manchurian') || name.includes('rice')) return 12;
-      if (name.includes('crispy') || name.includes('raita') || name.includes('noodles') || name.includes('burger')) return 10;
-      if (name.includes('roti') || name.includes('naan')) return 5;
-      if (name.includes('drink') || name.includes('coke') || name.includes('pepsi') || name.includes('sprite') || name.includes('water') || name.includes('lassi') || name.includes('soda')) return 2;
-      return 15; // default fallback
-    });
-    return Math.max(...times);
+  // Attendance handlers
+  const handleCheckIn = () => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    localStorage.setItem(`pos_kitchen_team_attendance_status_${activeDate}`, 'CHECKED_IN');
+    localStorage.setItem(`pos_kitchen_team_attendance_checkin_${activeDate}`, timeStr);
+
+    setAttendanceStatus('CHECKED_IN');
+    setCheckInTime(timeStr);
   };
 
-  const fetchOrders = async () => {
-    try {
-      const data = await apiRequest('/restaurant/orders');
-      if (Array.isArray(data)) {
-        setOrders(data);
-      }
-    } catch (err) {
-      console.warn('Failed to fetch kitchen orders from API, using mock fallback.');
-    } finally {
-      setLoading(false);
-    }
+  const handleCheckOut = () => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    localStorage.setItem(`pos_kitchen_team_attendance_status_${activeDate}`, 'CHECKED_OUT');
+    localStorage.setItem(`pos_kitchen_team_attendance_checkout_${activeDate}`, timeStr);
+
+    setAttendanceStatus('CHECKED_OUT');
+    setCheckOutTime(timeStr);
+
+    // Roll to next shift day dynamically
+    const nextDate = getAttendanceDate();
+    setActiveDate(nextDate);
+    setAttendanceStatus(null);
+    setCheckInTime(null);
+    setCheckOutTime(null);
   };
 
-  const handleSeedDummyOrders = async () => {
-    try {
-      await apiRequest('/restaurant/seed-ready-orders', { method: 'POST' });
-      fetchOrders();
-    } catch (err) {
-      console.warn('Failed to seed dummy data.');
-    }
-  };
-
-  // Update overall order status
-  const handleUpdateOrderStatus = async (orderId: string, nextStatus: string) => {
-    try {
-      const updatedOrder = await apiRequest(`/restaurant/orders/${orderId}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: nextStatus })
-      });
-
-      setOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
-
-      if (nextStatus === 'READY') {
-        triggerReadyNotification(updatedOrder);
-      }
-    } catch (err) {
-      console.warn('API update failed, updating local state.');
-      setOrders(prev => prev.map(o => {
-        if (o.id === orderId) {
-          const nextItems = o.items.map(it => ({
-            ...it,
-            status: (nextStatus === 'READY' ? 'READY' : nextStatus === 'PREPARING' ? 'PREPARING' : 'PENDING') as any
-          }));
-          const updated: KitchenOrder = {
-            ...o,
-            status: nextStatus as any,
-            items: nextItems,
-            readyAt: nextStatus === 'READY' ? new Date().toISOString() : o.readyAt,
-            preparingAt: nextStatus === 'PREPARING' ? new Date().toISOString() : o.preparingAt
-          };
-          if (nextStatus === 'READY') {
-            triggerReadyNotification(updated);
+  // KOT Actions
+  const handleAcceptOrder = (orderId: string) => {
+    const updated = orders.map(o => {
+      if (o.id === orderId) {
+        const updatedItems = o.items.map(it => {
+          if (it.status === 'PENDING') {
+            return { ...it, status: 'PREPARING' as const };
           }
-          return updated;
-        }
-        return o;
-      }));
-    }
-  };
-
-  // Update item-wise preparation status
-  const handleUpdateItemStatus = async (itemId: string, nextItemStatus: 'PENDING' | 'PREPARING' | 'READY') => {
-    try {
-      const updatedOrder = await apiRequest(`/restaurant/orders/items/${itemId}/status`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: nextItemStatus })
-      });
-
-      setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
-
-      if (updatedOrder.status === 'READY') {
-        triggerReadyNotification(updatedOrder);
-      }
-    } catch (err) {
-      console.warn('API item update failed, updating local state.');
-      setOrders(prev => {
-        return prev.map(o => {
-          const hasItem = o.items.some(it => it.id === itemId);
-          if (!hasItem) return o;
-
-          const updatedItems = o.items.map(it => it.id === itemId ? { ...it, status: nextItemStatus } : it);
-
-          // Calculate overall status
-          let nextOrderStatus: KitchenOrder['status'] = 'NEW';
-          const isAllPending = updatedItems.every(it => it.status === 'PENDING');
-          const isAllReady = updatedItems.every(it => it.status === 'READY');
-          const hasAnyPreparing = updatedItems.some(it => it.status === 'PREPARING');
-          const hasAnyReady = updatedItems.some(it => it.status === 'READY');
-
-          if (isAllReady) {
-            nextOrderStatus = 'READY';
-          } else if (hasAnyPreparing && hasAnyReady) {
-            nextOrderStatus = 'PARTIALLY_READY';
-          } else if (hasAnyPreparing) {
-            nextOrderStatus = 'PREPARING';
-          } else if (hasAnyReady) {
-            nextOrderStatus = 'PARTIALLY_READY';
-          } else if (isAllPending) {
-            nextOrderStatus = 'NEW';
-          } else {
-            nextOrderStatus = 'PREPARING';
-          }
-
-          const updated: KitchenOrder = {
-            ...o,
-            items: updatedItems,
-            status: nextOrderStatus,
-            readyAt: nextOrderStatus === 'READY' ? new Date().toISOString() : o.readyAt
-          };
-
-          if (nextOrderStatus === 'READY') {
-            triggerReadyNotification(updated);
-          }
-
-          return updated;
+          return it;
         });
-      });
-    }
-  };
-
-  const triggerReadyNotification = (order: KitchenOrder) => {
-    playAlertSound();
-    const id = Date.now().toString() + Math.random().toString();
-    const tableStr = order.table?.tableNumber || 'Takeaway';
-    const kotShort = order.id.slice(-4).toUpperCase();
-
-    // Add compact 3-second toast
-    setToasts(prev => {
-      if (prev.some(t => t.kotNumber === kotShort)) return prev;
-      return [...prev, { id, table: tableStr, kotNumber: kotShort }];
-    });
-
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 3000);
-  };
-
-  // SSE Sync
-  useEffect(() => {
-    fetchOrders();
-
-    const sseUrl = `${API_BASE}/restaurant/realtime`;
-    const eventSource = new EventSource(sseUrl);
-
-    eventSource.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        if (payload.type === 'NEW_ORDER' || payload.type === 'ORDER_STATUS_UPDATE') {
-          const orderData = payload.data || payload;
-          setOrders(prev => {
-            const exists = prev.some(o => o.id === orderData.id);
-            if (exists) {
-              return prev.map(o => o.id === orderData.id ? orderData : o);
-            }
-            // Trigger animation for new incoming order
-            setNewOrderAnimationIds(ani => [...ani, orderData.id]);
-            setTimeout(() => {
-              setNewOrderAnimationIds(ani => ani.filter(id => id !== orderData.id));
-            }, 6000);
-            return [orderData, ...prev];
-          });
-
-          if (orderData.status === 'READY') {
-            triggerReadyNotification(orderData);
-          }
-        }
-      } catch (err) {
-        console.error('[KDS SSE] Parse error:', err);
+        return {
+          ...o,
+          status: 'PREPARING' as const,
+          acceptedAt: new Date().toISOString(),
+          items: updatedItems
+        };
       }
+      return o;
+    });
+    saveOrders(updated);
+    if (selectedOrderDetails?.id === orderId) {
+      const match = updated.find(o => o.id === orderId);
+      if (match) setSelectedOrderDetails(match);
+    }
+  };
+
+  const handleStartPreparingOrder = (orderId: string) => {
+    const updated = orders.map(o => {
+      if (o.id === orderId) {
+        const updatedItems = o.items.map(it => {
+          if (it.status === 'PENDING') {
+            return { ...it, status: 'PREPARING' as const };
+          }
+          return it;
+        });
+        return {
+          ...o,
+          status: 'PREPARING' as const,
+          preparingAt: new Date().toISOString(),
+          items: updatedItems
+        };
+      }
+      return o;
+    });
+    saveOrders(updated);
+    if (selectedOrderDetails?.id === orderId) {
+      const match = updated.find(o => o.id === orderId);
+      if (match) setSelectedOrderDetails(match);
+    }
+  };
+
+  const handleMarkOrderReady = (orderId: string) => {
+    const updated = orders.map(o => {
+      if (o.id === orderId) {
+        const updatedItems = o.items.map(it => ({ ...it, status: 'READY' as const }));
+        const updatedOrd: KitchenOrder = {
+          ...o,
+          status: 'READY' as const,
+          readyAt: new Date().toISOString(),
+          items: updatedItems
+        };
+        triggerReadyNotification(updatedOrd);
+        return updatedOrd;
+      }
+      return o;
+    });
+    saveOrders(updated);
+    if (selectedOrderDetails?.id === orderId) {
+      const match = updated.find(o => o.id === orderId);
+      if (match) setSelectedOrderDetails(match);
+    }
+  };
+
+  const handleServeOrder = (orderId: string) => {
+    const updated = orders.map(o => {
+      if (o.id === orderId) {
+        return {
+          ...o,
+          status: 'COMPLETED' as const
+        };
+      }
+      return o;
+    });
+    saveOrders(updated);
+    setSelectedOrderDetails(null);
+  };
+
+  const handleToggleItemStatus = (orderId: string, itemId: string, currentStatus: string) => {
+    const nextItemStatus = currentStatus === 'READY' ? 'PREPARING' : 'READY';
+    const updated = orders.map(o => {
+      if (o.id === orderId) {
+        const updatedItems = o.items.map(it => {
+          if (it.id === itemId) {
+            return { ...it, status: nextItemStatus as any };
+          }
+          return it;
+        });
+
+        // Compute aggregate order status
+        const allReady = updatedItems.every(it => it.status === 'READY');
+        const hasPreparing = updatedItems.some(it => it.status === 'PREPARING');
+        let newStatus = o.status;
+
+        if (allReady) {
+          newStatus = 'READY';
+        } else if (hasPreparing) {
+          newStatus = 'PREPARING';
+        } else {
+          newStatus = 'PARTIALLY_READY';
+        }
+
+        const updatedOrd: KitchenOrder = {
+          ...o,
+          items: updatedItems,
+          status: newStatus,
+          readyAt: newStatus === 'READY' ? new Date().toISOString() : o.readyAt
+        };
+
+        if (newStatus === 'READY') {
+          triggerReadyNotification(updatedOrd);
+        } else {
+          notifiedReadyOrderIds.current.delete(orderId);
+        }
+
+        return updatedOrd;
+      }
+      return o;
+    });
+    saveOrders(updated);
+    if (selectedOrderDetails?.id === orderId) {
+      const match = updated.find(o => o.id === orderId);
+      if (match) setSelectedOrderDetails(match);
+    }
+  };
+
+  // Notification engine
+  const triggerReadyNotification = (order: KitchenOrder) => {
+    if (notifiedReadyOrderIds.current.has(order.id)) return;
+    notifiedReadyOrderIds.current.add(order.id);
+
+    playAlertSound();
+    const tableStr = order.table?.tableNumber || 'Takeaway';
+    const kotShort = order.orderNo;
+    const waiterName = order.waiter?.name || 'Staff';
+
+    const notif = {
+      id: Date.now().toString() + Math.random().toString(),
+      title: `Order ${kotShort} Ready`,
+      message: `${tableStr} order is ready for pickup. Waiter: ${waiterName}`,
+      tableNumber: tableStr,
+      waiterName,
+      kotNumber: kotShort,
+      timestamp: new Date()
     };
 
-    const timer = setInterval(() => setNowTime(Date.now()), 1000);
+    setNotificationQueue(prev => [...prev, notif]);
+    setNotificationHistory(prev => [notif, ...prev]);
+  };
 
-    return () => {
-      eventSource.close();
-      clearInterval(timer);
-    };
-  }, []);
+  const dismissNotification = () => {
+    setActiveNotification(null);
+  };
 
-  // Alert reminder loop for new un-accepted orders
   useEffect(() => {
-    if (newCount > lastNewCount) {
-      playAlertSound();
+    if (!activeNotification && notificationQueue.length > 0) {
+      const next = notificationQueue[0];
+      setActiveNotification(next);
+      setNotificationQueue(prev => prev.slice(1));
     }
-    setLastNewCount(newCount);
-  }, [newCount]);
+  }, [activeNotification, notificationQueue]);
 
   useEffect(() => {
-    if (newCount > 0) {
-      const soundInterval = setInterval(() => {
-        playAlertSound();
-      }, 60000);
-      return () => clearInterval(soundInterval);
+    if (activeNotification) {
+      const timer = setTimeout(() => {
+        setActiveNotification(null);
+      }, 4000);
+      return () => clearTimeout(timer);
     }
-  }, [newCount]);
+  }, [activeNotification]);
 
-  const isOrderDelayed = (order: KitchenOrder) => {
-    if (order.status === 'READY' || order.status === 'COMPLETED' || order.status === 'SERVED') return false;
-    const start = order.preparingAt || order.acceptedAt || order.createdAt;
-    const diffMs = nowTime - new Date(start).getTime();
-    const expectedMins = getOrderPrepTime(order);
-    return diffMs > expectedMins * 60 * 1000;
+  // Searching & Sorting
+  const matchesSearch = (order: KitchenOrder) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const matchesKot = order.orderNo.toLowerCase().includes(q);
+    const matchesTable = (order.table?.tableNumber || '').toLowerCase().includes(q);
+    const matchesWaiter = (order.waiter?.name || '').toLowerCase().includes(q);
+    const matchesItems = order.items.some(it => it.menuItem?.name.toLowerCase().includes(q));
+    return matchesKot || matchesTable || matchesWaiter || matchesItems;
   };
 
-  const getTimingDetails = (order: KitchenOrder) => {
-    const start = order.preparingAt || order.acceptedAt || order.createdAt;
-    const diffMs = nowTime - new Date(start).getTime();
-    const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
-    const mins = Math.floor(totalSecs / 60);
-    const secs = totalSecs % 60;
-    const timeString = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-    let label = 'Waiting';
-    if (order.status === 'PREPARING' || order.status === 'ACCEPTED' || order.status === 'PARTIALLY_READY') {
-      label = 'Cooking';
-    } else if (order.status === 'READY') {
-      label = 'Ready';
+  const sortOrders = (a: KitchenOrder, b: KitchenOrder) => {
+    const aTime = new Date(a.createdAt).getTime();
+    const bTime = new Date(b.createdAt).getTime();
+    if (sortOption === 'oldest') return aTime - bTime;
+    if (sortOption === 'newest') return bTime - aTime;
+    if (sortOption === 'waiting') return aTime - bTime; // oldest first for waiting
+    if (sortOption === 'priority') {
+      const pWeight = (p: string) => (p === 'High' ? 3 : p === 'Medium' ? 2 : 1);
+      return pWeight(b.priority) - pWeight(a.priority);
     }
-
-    return {
-      label,
-      timeString,
-      minutesElapsed: mins
-    };
+    return 0;
   };
 
-  // Color Mapping
-  const getOrderCardStyles = (order: KitchenOrder) => {
-    const isDelayed = isOrderDelayed(order);
-    if (isDelayed) {
-      return {
-        borderClass: 'border-rose-500/80 shadow-rose-100 dark:shadow-rose-950/20',
-        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50',
-        badgeText: 'DELAYED'
-      };
-    }
-    switch (order.status) {
-      case 'NEW':
-        return {
-          borderClass: 'border-slate-200 dark:border-slate-800 shadow-slate-100/50 dark:shadow-slate-900/20',
-          badgeClass: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
-          badgeText: 'PENDING'
-        };
-      case 'ACCEPTED':
-        return {
-          borderClass: 'border-blue-300 dark:border-blue-800/80 shadow-blue-50/50 dark:shadow-blue-950/10',
-          badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50',
-          badgeText: 'ACCEPTED'
-        };
-      case 'PREPARING':
-        return {
-          borderClass: 'border-orange-300 dark:border-orange-850/80 shadow-orange-50/50 dark:shadow-orange-950/10',
-          badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-955/30 dark:text-orange-400 dark:border-orange-900/50',
-          badgeText: 'PREPARING'
-        };
-      case 'PARTIALLY_READY':
-        return {
-          borderClass: 'border-amber-400/80 dark:border-amber-800 shadow-amber-50/40 dark:shadow-amber-950/10',
-          badgeClass: 'bg-amber-50 text-amber-800 border-amber-250 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50',
-          badgeText: 'PARTIALLY READY'
-        };
-      case 'READY':
-        return {
-          borderClass: 'border-emerald-400 dark:border-emerald-800 shadow-emerald-50 dark:shadow-emerald-950/10',
-          badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-250 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50',
-          badgeText: 'READY TO SERVE'
-        };
-      default:
-        return {
-          borderClass: 'border-slate-200 dark:border-slate-800 shadow-sm',
-          badgeClass: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
-          badgeText: 'SERVED'
-        };
-    }
-  };
+  // KOT Workspace Columns Filtering
+  const activeOrders = orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'SERVED' && o.status !== 'CANCELLED');
+  const filteredOrders = activeOrders.filter(matchesSearch).sort(sortOrders);
 
-  const getFilteredOrders = () => {
-    const sorted = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    switch (activeTab) {
-      case 'NEW':
-        return sorted.filter(o => o.status === 'NEW');
-      case 'PREPARING':
-        return sorted.filter(o => o.status === 'ACCEPTED' || o.status === 'PREPARING' || o.status === 'PARTIALLY_READY');
-      case 'READY':
-        return sorted.filter(o => o.status === 'READY');
-      case 'COMPLETED':
-        return sorted.filter(o => o.status === 'COMPLETED' || o.status === 'SERVED');
-      default:
-        return [];
-    }
-  };
+  const columnNew = filteredOrders.filter(o => o.status === 'NEW' || o.status === 'ACCEPTED');
+  const columnPreparing = filteredOrders.filter(o => o.status === 'PREPARING' || o.status === 'PARTIALLY_READY');
+  const columnReady = filteredOrders.filter(o => o.status === 'READY');
 
-  const displayedOrders = getFilteredOrders();
+  // Stats Calculations
+  const waitingOrdersCount = activeOrders.filter(o => o.status === 'NEW' || o.status === 'ACCEPTED').length;
+  const preparingOrdersCount = activeOrders.filter(o => o.status === 'PREPARING' || o.status === 'PARTIALLY_READY').length;
+  const readyOrdersCount = activeOrders.filter(o => o.status === 'READY').length;
+  const completedTodayCount = orders.filter(o => o.status === 'COMPLETED' || o.status === 'SERVED').length;
+  
+  // Delayed count
+  const delayedCount = activeOrders.filter(o => getTimingDetails(o, nowTime).isLate).length;
 
   return (
-    <div className="space-y-6 text-slate-850 dark:text-slate-100 max-w-7xl mx-auto p-4 select-none" style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Toast Notifications Container (Compact, Top-Right Corner, Stacking) */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-xs w-full pointer-events-none">
-        {toasts.map(toast => (
-          <div
-            key={toast.id}
-            className="bg-slate-900/95 dark:bg-slate-950/95 text-white p-4 rounded-xl shadow-xl border border-emerald-500/35 flex items-start gap-3 pointer-events-auto transition-all duration-300 animate-slide-in w-72"
-          >
-            <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
-              🍽
+    <div className="space-y-6 text-slate-900 max-w-7xl mx-auto p-4 select-none min-h-screen pb-16" style={{ fontFamily: "'Inter', sans-serif" }}>
+      
+      {/* Toast alert */}
+      {activeNotification && (
+        <div className="fixed top-6 right-6 z-[100] pointer-events-auto transition-all duration-300 animate-slide-in">
+          <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-emerald-500/40 flex items-start gap-3 w-80 relative">
+            <button
+              onClick={dismissNotification}
+              className="absolute top-2 right-2 text-slate-400 hover:text-white transition-colors p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+              <Bell className="w-5 h-5" />
             </div>
-            <div className="flex-1 min-w-0 text-left">
-              <div className="font-extrabold text-xs text-emerald-400 tracking-wider uppercase">Order Ready</div>
-              <div className="font-extrabold text-sm mt-0.5 text-white leading-tight">{toast.table}</div>
-              <div className="text-[11px] text-slate-400 font-semibold mt-0.5">KOT #{toast.kotNumber}</div>
-              <div className="text-[11px] text-slate-355 font-medium mt-1">Ready for Serving</div>
+            <div className="flex-1 min-w-0 text-left pr-4">
+              <div className="font-extrabold text-[10px] text-emerald-400 tracking-wider uppercase">Order Ready Alert</div>
+              <div className="font-bold text-sm mt-0.5 text-white truncate">{activeNotification.tableNumber}</div>
+              <div className="text-[11px] text-slate-350 font-semibold mt-0.5">KOT {activeNotification.kotNumber}</div>
+              <div className="text-[11px] text-slate-400 mt-1 font-medium">Waiter: {activeNotification.waiterName}</div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Modern KDS Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-[#0c1024] p-5 rounded-2xl border border-slate-200/60 dark:border-slate-850 shadow-sm">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300">
-            <ChefHat className="w-5.5 h-5.5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-slate-850 dark:text-white tracking-tight flex items-center gap-2">
-              Kitchen Workspace
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Real-time KOT dispatching & item-wise preparation workflow</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => navigate('/restaurant/inventory-requests')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-emerald-600/10"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Create Stock Request</span>
-          </button>
-          <button
-            onClick={playAlertSound}
-            className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span>Bell Test</span>
-          </button>
-          <button
-            onClick={handleSeedDummyOrders}
-            className="bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-            title="Seed dummy orders"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Seed KOTs</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs Container */}
-      <div className="flex bg-slate-100/70 dark:bg-slate-900/60 p-1.5 rounded-xl border border-slate-200/50 dark:border-slate-855">
-        {[
-          { tabId: 'NEW', label: 'New Orders', count: newCount, activeText: 'text-blue-600 dark:text-blue-400 border-blue-600' },
-          { tabId: 'PREPARING', label: 'Preparing', count: preparingCount, activeText: 'text-orange-600 dark:text-orange-400 border-orange-500' },
-          { tabId: 'READY', label: 'Ready to Serve', count: readyCount, activeText: 'text-emerald-600 dark:text-emerald-400 border-emerald-500' },
-          { tabId: 'COMPLETED', label: 'Completed', count: completedCount, activeText: 'text-slate-700 dark:text-slate-300 border-slate-600' }
-        ].map(t => (
-          <button
-            key={t.tabId}
-            onClick={() => setActiveTab(t.tabId as any)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === t.tabId
-                ? 'bg-white dark:bg-[#0c1024] shadow-sm text-slate-900 dark:text-white border-b-2 ' + t.activeText
-                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
-              }`}
-          >
-            <span>{t.label}</span>
-            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold bg-slate-250/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-              {t.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* KDS Active Card Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-white dark:bg-[#0c1024] border border-slate-200/60 dark:border-slate-850 p-5 rounded-2xl shadow-sm animate-pulse space-y-4">
-              <div className="h-5 w-24 bg-slate-200 dark:bg-slate-850 rounded"></div>
-              <div className="space-y-2 py-4">
-                <div className="h-4 w-full bg-slate-200 dark:bg-slate-850 rounded"></div>
-                <div className="h-4 w-4/5 bg-slate-200 dark:bg-slate-855 rounded"></div>
-              </div>
-              <div className="h-9 w-full bg-slate-200 dark:bg-slate-850 rounded-xl"></div>
-            </div>
-          ))}
-        </div>
-      ) : displayedOrders.length === 0 ? (
-        <div className="bg-white dark:bg-[#0c1024] border border-slate-200/60 dark:border-slate-850 rounded-3xl p-12 text-center max-w-xl mx-auto space-y-4 shadow-sm">
-          <div className="w-14 h-14 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-600 rounded-full flex items-center justify-center mx-auto border border-slate-100 dark:border-slate-800">
-            <ChefHat className="w-6.5 h-6.5" />
-          </div>
-          <h3 className="text-md font-bold text-slate-850 dark:text-slate-200">No Orders in this Section</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
-            There are currently no orders under the "{activeTab.toLowerCase()}" filter. New orders placed will appear here in real time.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {displayedOrders.map(order => {
-            const { borderClass, badgeClass, badgeText } = getOrderCardStyles(order);
-            const isNew = newOrderAnimationIds.includes(order.id);
-            const prepTimeMins = getOrderPrepTime(order);
-            const timing = getTimingDetails(order);
-            const isDelayed = isOrderDelayed(order);
-
-            return (
-              <div
-                key={order.id}
-                className={`bg-white dark:bg-[#0c1024] rounded-2xl border-2 ${borderClass} shadow-md hover:shadow-lg transition-all flex flex-col justify-between overflow-hidden text-left relative ${isNew ? 'animate-bounce-in' : ''
-                  }`}
-              >
-                {/* Card Header */}
-                <div className="p-4 border-b border-slate-100 dark:border-slate-900 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-extrabold text-[13px] text-slate-900 dark:text-white font-mono">
-                      KOT #{order.id.slice(-4).toUpperCase()}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}`}>
-                      {badgeText}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
-                    <div className="flex items-center gap-1 font-bold text-slate-855 dark:text-slate-200">
-                      <span>🍽</span>
-                      <span>{order.table?.tableNumber || 'Takeaway'}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <User className="w-3.5 h-3.5" />
-                      <span>Waiter: {order.waiter?.name || 'Staff'}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <span className={`font-bold uppercase ${isDelayed ? 'text-rose-500 font-extrabold animate-pulse' : 'text-slate-400'}`}>
-                      Priority: {isDelayed ? 'High' : 'Normal'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card Body - Ordered Items */}
-                <div className="p-4 flex-grow space-y-3.5">
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider block mb-1">
-                      Ordered Items ({order.items.length})
-                    </span>
-                    <div className="space-y-0.5">
-                      {order.items.map((it) => (
-                        <div key={it.id} className="py-2.5 border-b border-slate-100/70 dark:border-slate-900 last:border-0 flex flex-col gap-1.5">
-                          <div className="flex justify-between items-start">
-                            <span className="font-extrabold text-[13px] text-slate-800 dark:text-slate-100 leading-tight">
-                              {it.menuItem?.name || 'Dish'} <strong className="text-slate-900 dark:text-white font-extrabold text-[14px]">×{it.quantity}</strong>
-                            </span>
-                          </div>
-
-                          {it.notes && (
-                            <span className="text-[11px] text-amber-600 dark:text-amber-400 italic">
-                              ↳ "{it.notes}"
-                            </span>
-                          )}
-
-                          {/* Segmented Status Selector */}
-                          <div className="flex rounded-lg overflow-hidden border border-slate-200/60 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 p-0.5 shrink-0 text-[10px] font-extrabold w-fit mt-1 select-none">
-                            {[
-                              { status: 'PENDING', label: 'Pending', activeClass: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-                              { status: 'PREPARING', label: 'Cooking', activeClass: 'bg-orange-500 text-white shadow-sm' },
-                              { status: 'READY', label: 'Ready', activeClass: 'bg-emerald-500 text-white shadow-sm' }
-                            ].map(btn => (
-                              <button
-                                key={btn.status}
-                                onClick={() => handleUpdateItemStatus(it.id, btn.status as any)}
-                                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${it.status === btn.status
-                                    ? btn.activeClass
-                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-455'
-                                  }`}
-                              >
-                                {btn.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Kitchen Note */}
-                  {order.notes && (
-                    <div className="bg-amber-50/40 dark:bg-amber-955/15 border border-amber-100/50 dark:border-amber-900/30 p-2.5 rounded-xl text-xs space-y-0.5">
-                      <span className="font-bold text-[9px] uppercase tracking-wider text-amber-700 dark:text-amber-400 block">
-                        Kitchen Instruction
-                      </span>
-                      <p className="font-semibold text-slate-700 dark:text-slate-300">
-                        "{order.notes}"
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Card Footer */}
-                <div className="p-4 border-t border-slate-100 dark:border-slate-900 bg-slate-50/30 dark:bg-slate-900/5 space-y-3 text-xs">
-                  {/* Estimated Time Indicator */}
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-500 dark:text-slate-400">
-                      {timing.label}: <strong className="font-mono text-slate-855 dark:text-white font-extrabold">{timing.timeString}</strong>
-                    </span>
-                    <span className={`flex items-center gap-1 font-bold ${isDelayed ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>
-                      {isDelayed && <AlertTriangle className="w-3.5 h-3.5" />}
-                      {prepTimeMins} Min Limit
-                    </span>
-                  </div>
-
-                  {/* Quick Global Action Button */}
-                  {order.status === 'NEW' && (
-                    <button
-                      onClick={() => handleUpdateOrderStatus(order.id, 'PREPARING')}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-blue-600/10 transition-colors"
-                    >
-                      <Play className="w-3.5 h-3.5" />
-                      <span>Accept Order</span>
-                    </button>
-                  )}
-
-                  {(order.status === 'PREPARING' || order.status === 'ACCEPTED' || order.status === 'PARTIALLY_READY') && (
-                    <button
-                      onClick={() => handleUpdateOrderStatus(order.id, 'READY')}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-emerald-600/10 transition-colors"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Mark All Ready</span>
-                    </button>
-                  )}
-
-                  {order.status === 'READY' && (
-                    <button
-                      onClick={() => handleUpdateOrderStatus(order.id, 'COMPLETED')}
-                      className="w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-900 dark:hover:bg-black text-white font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-colors"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Serve Order</span>
-                    </button>
-                  )}
-
-                  {(order.status === 'COMPLETED' || order.status === 'SERVED') && (
-                    <div className="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-extrabold py-2 px-3 rounded-xl text-center">
-                      ✓ Served to Table
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
 
-      {/* Styled Micro-Animations Injection */}
+      {/* 1. BRAND-ACCENTED KITCHEN BANNER HEADER */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-1 text-left">
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Good Morning, Kitchen Team 👨‍🍳
+            </h1>
+            <p className="text-slate-300 font-medium text-sm mt-1">
+              Today you have <span className="font-semibold text-white">{activeOrders.length} active orders</span>, <span className="font-semibold text-white">{preparingOrdersCount} preparing</span>, and <span className="font-semibold text-white">{readyOrdersCount} ready for pickup</span>.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 self-stretch lg:self-auto justify-between lg:justify-end">
+            <div className="bg-slate-800/80 border border-slate-700/60 px-3.5 py-1.5 rounded-xl text-left flex items-center gap-2 shadow-sm text-slate-200">
+              <CalendarIcon className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-medium">
+                {new Date(nowTime).toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+
+            <div className="bg-slate-800/80 border border-slate-700/60 px-3.5 py-1.5 rounded-xl text-left flex items-center gap-2 shadow-sm text-slate-200">
+              <Clock className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-medium font-mono">
+                {new Date(nowTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TODAY'S ATTENDANCE STANDARDIZED CARD */}
+      <AttendanceWidget
+        status={attendanceStatus}
+        checkInTime={checkInTime}
+        checkOutTime={checkOutTime}
+        workingHours="--"
+        shiftName="Morning Shift (09:00 AM – 06:00 PM)"
+        nowTime={nowTime}
+        onCheckIn={handleCheckIn}
+        onCheckOut={handleCheckOut}
+      />
+
+      {/* 3. REDESIGNED KPI CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {[
+          { 
+            label: 'Active Orders', 
+            val: `${activeOrders.length} Tickets`, 
+            desc: 'Awaiting / Cooking KOTs', 
+            icon: ChefHat, 
+            iconColor: 'text-blue-500', 
+            trend: 'Live', 
+            trendColor: 'text-blue-600 bg-blue-50/60 border-blue-100' 
+          },
+          { 
+            label: 'Preparing', 
+            val: `${preparingOrdersCount} KOTs`, 
+            desc: 'Items active on stove', 
+            icon: Clock, 
+            iconColor: 'text-amber-500', 
+            trend: 'Cooking', 
+            trendColor: 'text-amber-600 bg-amber-50/60 border-amber-100' 
+          },
+          { 
+            label: 'Ready Orders', 
+            val: `${readyOrdersCount} Orders`, 
+            desc: 'Awaiting waiter pickup', 
+            icon: CheckCircle2, 
+            iconColor: 'text-emerald-500', 
+            trend: 'Ready', 
+            trendColor: 'text-emerald-600 bg-emerald-50/60 border-emerald-100' 
+          },
+          { 
+            label: 'Delayed Orders', 
+            val: `${delayedCount} Tickets`, 
+            desc: 'Exceeded target preparation limit', 
+            icon: AlertTriangle, 
+            iconColor: 'text-rose-500', 
+            trend: 'Delayed', 
+            trendColor: delayedCount > 0 ? 'text-rose-600 bg-rose-50/60 border-rose-100' : 'text-slate-500 bg-slate-50 border-slate-200/60' 
+          },
+          { 
+            label: 'Completed Today', 
+            val: `${completedTodayCount} KOTs`, 
+            desc: 'Cleared from workspace', 
+            icon: CheckCircle, 
+            iconColor: 'text-emerald-500', 
+            trend: 'Served', 
+            trendColor: 'text-emerald-600 bg-emerald-50/60 border-emerald-100' 
+          }
+        ].map((card, idx) => (
+          <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200 text-left shadow-xs flex flex-col justify-between hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 min-h-[120px]">
+            <div className="flex justify-between items-start">
+              <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
+                <card.icon className={`w-4 h-4 ${card.iconColor}`} />
+              </div>
+              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${card.trendColor}`}>
+                {card.trend}
+              </span>
+            </div>
+            <div className="mt-3.5 space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">{card.label}</span>
+              <h4 className="text-lg font-black text-slate-900 leading-none tracking-tight">{card.val}</h4>
+              <p className="text-[10px] text-slate-500 font-semibold leading-tight">{card.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 4. COMPACT KITCHEN STATUS PANEL */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs grid grid-cols-2 md:grid-cols-5 gap-4 text-left">
+        {[
+          { label: 'Active Chefs', val: '4 On Duty', desc: 'Curry & tandoor stations' },
+          { label: 'Available Stations', val: '6 Ready', desc: 'All kitchen ranges active' },
+          { label: 'Busy Stations', val: '4 Cooking', desc: 'Peak workload duty' },
+          { label: 'Orders Waiting', val: `${waitingOrdersCount} Tickets`, desc: 'Pending initial accept' },
+          { label: 'Average Preparation Time', val: '13.5 mins', desc: 'Target: 15.0 mins limit' }
+        ].map((item, idx) => (
+          <div key={idx} className="border-r border-slate-150 last:border-r-0 pr-4 last:pr-0">
+            <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">{item.label}</span>
+            <strong className="text-xs font-black text-slate-850 block mt-0.5">{item.val}</strong>
+            <span className="text-[9.5px] text-slate-500 font-semibold block mt-0.5 leading-snug">{item.desc}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter and Control block */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-left">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search Input */}
+          <div className="relative w-full md:w-80">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search KOT, Table, Waiter, or dish..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-8 py-2 rounded-xl border border-slate-200 bg-transparent text-xs focus:outline-none focus:border-emerald-600 font-medium h-9"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-650 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Sort Selector */}
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value as any)}
+              className="bg-transparent border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none text-slate-700 cursor-pointer h-9"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="priority">Priority First</option>
+              <option value="waiting">Longest Waiting</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
+          <button
+            onClick={() => navigate('/restaurant/inventory-requests')}
+            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer border border-emerald-500 shadow-sm flex items-center gap-1.5 h-9"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Inventory Request</span>
+          </button>
+
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={`border px-3.5 py-2 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer h-9 ${
+              soundEnabled 
+                ? 'bg-slate-50 border-slate-200 text-slate-700' 
+                : 'bg-rose-50 border-rose-200 text-rose-605'
+            }`}
+          >
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            <span>{soundEnabled ? 'Mute' : 'Unmute'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowHistoryPanel(true)}
+            className="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer relative h-9"
+          >
+            <History className="w-3.5 h-3.5" />
+            <span>History</span>
+            {notificationHistory.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center">
+                {notificationHistory.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* 5. REDESIGNED KITCHEN WORKSPACE KANBAN COLUMNS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start text-left">
+        
+        {/* Column 1: New Orders */}
+        <div className="space-y-4">
+          <div className="bg-slate-100/70 border border-slate-200 rounded-2xl p-3 flex justify-between items-center">
+            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span>New Orders</span>
+            </h3>
+            <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[10px] font-extrabold">
+              {columnNew.length}
+            </span>
+          </div>
+
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
+            {columnNew.length === 0 ? (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-8 text-center text-slate-400 text-xs italic shadow-2xs">
+                No new tickets.
+              </div>
+            ) : (
+              columnNew.map(order => (
+                <KdsOrderCard
+                  key={order.id}
+                  order={order}
+                  nowTime={nowTime}
+                  onAccept={() => handleAcceptOrder(order.id)}
+                  onStartPreparing={() => handleStartPreparingOrder(order.id)}
+                  onMarkReady={() => handleMarkOrderReady(order.id)}
+                  onToggleItemStatus={(itemId, current) => handleToggleItemStatus(order.id, itemId, current)}
+                  onViewDetails={() => setSelectedOrderDetails(order)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Column 2: Preparing */}
+        <div className="space-y-4">
+          <div className="bg-slate-100/70 border border-slate-200 rounded-2xl p-3 flex justify-between items-center">
+            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+              <span>Preparing</span>
+            </h3>
+            <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[10px] font-extrabold">
+              {columnPreparing.length}
+            </span>
+          </div>
+
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
+            {columnPreparing.length === 0 ? (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-8 text-center text-slate-400 text-xs italic shadow-2xs">
+                No orders preparing.
+              </div>
+            ) : (
+              columnPreparing.map(order => (
+                <KdsOrderCard
+                  key={order.id}
+                  order={order}
+                  nowTime={nowTime}
+                  onAccept={() => handleAcceptOrder(order.id)}
+                  onStartPreparing={() => handleStartPreparingOrder(order.id)}
+                  onMarkReady={() => handleMarkOrderReady(order.id)}
+                  onToggleItemStatus={(itemId, current) => handleToggleItemStatus(order.id, itemId, current)}
+                  onViewDetails={() => setSelectedOrderDetails(order)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Column 3: Ready */}
+        <div className="space-y-4">
+          <div className="bg-slate-100/70 border border-slate-200 rounded-2xl p-3 flex justify-between items-center">
+            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Ready for Pickup</span>
+            </h3>
+            <span className="bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[10px] font-extrabold">
+              {columnReady.length}
+            </span>
+          </div>
+
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1 scrollbar-thin">
+            {columnReady.length === 0 ? (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-8 text-center text-slate-400 text-xs italic shadow-2xs">
+                No ready tickets.
+              </div>
+            ) : (
+              columnReady.map(order => (
+                <KdsOrderCard
+                  key={order.id}
+                  order={order}
+                  nowTime={nowTime}
+                  onAccept={() => handleAcceptOrder(order.id)}
+                  onStartPreparing={() => handleStartPreparingOrder(order.id)}
+                  onMarkReady={() => handleMarkOrderReady(order.id)}
+                  onToggleItemStatus={(itemId, current) => handleToggleItemStatus(order.id, itemId, current)}
+                  onViewDetails={() => setSelectedOrderDetails(order)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* VIEW DETAILS DRAWER */}
+      {selectedOrderDetails && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-2xs flex justify-end z-50">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl p-6 relative overflow-y-auto flex flex-col justify-between text-left">
+            <div>
+              <div className="flex justify-between items-start border-b border-slate-150 pb-4 mb-4">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                    {selectedOrderDetails.customerType}
+                  </span>
+                  <h3 className="text-base font-extrabold text-slate-905 mt-1 block">Order {selectedOrderDetails.orderNo}</h3>
+                  <p className="text-[10px] text-slate-400 font-semibold">Table: {selectedOrderDetails.table?.tableNumber || 'Takeaway'} | Waiter: {selectedOrderDetails.waiter?.name || 'Staff'}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="p-1 rounded-lg hover:bg-slate-50 cursor-pointer h-7 w-7 flex items-center justify-center border border-slate-100"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4 text-slate-500 hover:text-slate-800" />
+                </button>
+              </div>
+
+              {selectedOrderDetails.notes && (
+                <div className="bg-amber-50/50 border border-amber-150 rounded-xl p-3 mb-5 text-[11px] text-amber-700 leading-relaxed font-semibold">
+                  <span className="text-[9.5px] uppercase font-bold text-amber-600 block mb-0.5 tracking-wider">Kitchen Instruction</span>
+                  {selectedOrderDetails.notes}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ordered Items</span>
+                {selectedOrderDetails.items.map(it => (
+                  <div key={it.id} className="border border-slate-200 rounded-xl p-3.5 bg-slate-50/50 flex justify-between items-center text-xs">
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                        <span>{getDishEmoji(it.menuItem?.name || '')}</span>
+                        <span>{it.menuItem?.name}</span>
+                        <span className="text-slate-500 font-bold">×{it.quantity}</span>
+                      </h4>
+                      {it.notes && <span className="text-[10px] text-slate-450 block font-semibold mt-0.5">Notes: {it.notes}</span>}
+                    </div>
+
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                      it.status === 'READY' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                      it.status === 'PREPARING' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                      'bg-blue-50 text-blue-705 border border-blue-200'
+                    }`}>
+                      {it.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-150 mt-8 shrink-0 flex gap-2">
+              {selectedOrderDetails.status !== 'READY' ? (
+                <>
+                  <button
+                    onClick={() => {
+                      handleStartPreparingOrder(selectedOrderDetails.id);
+                      setSelectedOrderDetails(null);
+                    }}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold uppercase py-2.5 rounded-xl text-xs tracking-wider cursor-pointer border border-emerald-500 h-10 shadow-sm"
+                  >
+                    Cook Whole Order
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleMarkOrderReady(selectedOrderDetails.id);
+                      setSelectedOrderDetails(null);
+                    }}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold uppercase py-2.5 rounded-xl text-xs tracking-wider cursor-pointer border border-emerald-500 h-10 shadow-sm"
+                  >
+                    Ready Whole Order
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => handleServeOrder(selectedOrderDetails.id)}
+                  className="w-full bg-slate-700 hover:bg-slate-800 text-white font-extrabold uppercase py-2.5 rounded-xl text-xs tracking-wider cursor-pointer border border-slate-650 h-10"
+                >
+                  Serve & Notify Waiter
+                </button>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* NOTIFICATION HISTORY DRAWER */}
+      {showHistoryPanel && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-2xs flex justify-end">
+          <div className="w-full max-w-sm bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col justify-between text-left">
+            <div className="p-5 border-b border-slate-150 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-slate-600" />
+                <h3 className="font-extrabold text-slate-855 text-base">Notification Logs</h3>
+              </div>
+              <button
+                onClick={() => setShowHistoryPanel(false)}
+                className="text-slate-500 hover:text-slate-800 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 scrollbar-thin">
+              {notificationHistory.length === 0 ? (
+                <p className="text-xs text-slate-450 italic text-center py-20">No recent logs recorded.</p>
+              ) : (
+                notificationHistory.map(notif => (
+                  <div key={notif.id} className="p-3 bg-slate-50 rounded-xl border border-slate-150 text-xs flex gap-3 hover:shadow-2xs transition">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 font-bold">✓</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-extrabold text-slate-900">{notif.title}</div>
+                      <div className="text-slate-550 mt-0.5 leading-snug">{notif.message}</div>
+                      <span className="text-[10px] text-slate-400 block mt-1.5 font-medium font-mono">
+                        {new Date(notif.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-150 bg-slate-50/50">
+              <button
+                disabled={notificationHistory.length === 0}
+                onClick={() => setNotificationHistory([])}
+                className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition disabled:opacity-50 cursor-pointer border border-rose-150"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Clear Logs</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Styled Micro-Animations */}
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes slide-in-right {
@@ -747,15 +1034,197 @@ export const KitchenDisplay: React.FC = () => {
         .animate-slide-in {
           animation: slide-in-right 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        @keyframes bounce-in-pop {
-          0% { transform: scale(0.92); opacity: 0; }
-          60% { transform: scale(1.03); }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-bounce-in {
-          animation: bounce-in-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
-        }
       `}} />
+
+    </div>
+  );
+};
+
+// ==================== KDS COLUMN ORDER CARD COMPONENT ====================
+
+interface KdsOrderCardProps {
+  order: KitchenOrder;
+  nowTime: number;
+  onAccept: () => void;
+  onStartPreparing: () => void;
+  onMarkReady: () => void;
+  onToggleItemStatus: (itemId: string, currentStatus: string) => void;
+  onViewDetails: () => void;
+}
+
+const KdsOrderCard: React.FC<KdsOrderCardProps> = ({
+  order,
+  nowTime,
+  onAccept,
+  onStartPreparing,
+  onMarkReady,
+  onToggleItemStatus,
+  onViewDetails
+}) => {
+  const { elapsedStr, completionTime, isLate } = getTimingDetails(order, nowTime);
+  const totalItemsCount = order.items.length;
+  const completedItemsCount = order.items.filter(it => it.status === 'READY').length;
+  const progressPercent = totalItemsCount > 0 ? Math.round((completedItemsCount / totalItemsCount) * 100) : 0;
+
+
+
+  return (
+    <div className="bg-white border border-slate-205 rounded-2xl p-5 shadow-2xs hover:shadow-md transition text-left flex flex-col justify-between relative overflow-hidden min-h-[340px]">
+      
+      <div>
+        {/* Card Header Info */}
+        <div className="flex justify-between items-start border-b border-slate-100 pb-3 mb-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <strong className="text-xs font-black text-slate-900 block uppercase leading-none tracking-tight">KOT {order.orderNo}</strong>
+              <span className="bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">
+                {order.table?.tableNumber || 'Takeaway'}
+              </span>
+              <span className="bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-md text-[9px] font-extrabold text-slate-500 uppercase tracking-wider">
+                {order.customerType}
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-semibold mt-1">Waiter: {order.waiter?.name || 'Staff'} | Priority: <strong className={order.priority === 'High' ? 'text-rose-600' : 'text-slate-655'}>{order.priority}</strong></p>
+          </div>
+
+          <div className="flex flex-col items-end">
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">KOT Status</span>
+            <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase mt-0.5 ${
+              order.status === 'NEW' || order.status === 'ACCEPTED' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+              order.status === 'PREPARING' || order.status === 'PARTIALLY_READY' ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse' :
+              'bg-emerald-50 text-emerald-700 border border-emerald-250'
+            }`}>
+              {order.status === 'NEW' || order.status === 'ACCEPTED' ? '🔵 New' : order.status === 'PREPARING' || order.status === 'PARTIALLY_READY' ? '🟠 Preparing' : '🟢 Ready'}
+            </span>
+          </div>
+        </div>
+
+        {/* Timers Bar */}
+        <div className="space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-4 text-[10px] font-bold text-slate-550 uppercase tracking-wider">
+          <div className="flex flex-wrap gap-2.5 items-center">
+            <div className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>Elapsed: <strong className="text-slate-800 font-mono">{elapsedStr}</strong></span>
+            </div>
+            <span>•</span>
+            <div>
+              <span>Est Target: <strong className="text-slate-800 font-mono">{completionTime}</strong></span>
+            </div>
+          </div>
+          {isLate && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 rounded-md text-center text-[9px] font-extrabold animate-pulse">
+              🔴 Delayed Dispatch
+            </div>
+          )}
+        </div>
+
+        {order.notes && (
+          <p className="text-[11px] text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-medium mb-4 leading-relaxed">
+            Note: {order.notes}
+          </p>
+        )}
+
+        {/* Ordered items list */}
+        <div className="space-y-2 mb-5">
+          {order.items.map(dish => (
+            <div key={dish.id} className="flex justify-between items-center text-xs font-semibold border border-slate-150 rounded-xl p-2.5 bg-slate-50/50">
+              <div className="flex items-center gap-2 min-w-0">
+                {order.status !== 'COMPLETED' && order.status !== 'SERVED' ? (
+                  <button
+                    onClick={() => onToggleItemStatus(dish.id, dish.status)}
+                    className={`shrink-0 transition-colors ${
+                      dish.status === 'READY' ? 'text-emerald-600 animate-scale-pop' : 'text-slate-400 hover:text-emerald-500'
+                    }`}
+                  >
+                    {dish.status === 'READY' ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                ) : (
+                  <div className="w-4 h-4 flex items-center justify-center text-emerald-500 shrink-0 font-bold">✓</div>
+                )}
+
+                <span className="text-sm shrink-0">{getDishEmoji(dish.menuItem?.name || '')}</span>
+                
+                <div className="min-w-0 text-left">
+                  <span className={`text-slate-900 font-extrabold truncate block ${dish.status === 'READY' ? 'line-through opacity-50' : ''}`}>
+                    {dish.menuItem?.name}
+                    <span className="text-slate-505 font-bold ml-1.5">×{dish.quantity}</span>
+                  </span>
+                  {dish.notes && <span className="block text-[9.5px] text-slate-400 font-medium mt-0.5 truncate">Note: {dish.notes}</span>}
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end shrink-0">
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                  dish.status === 'PENDING' ? 'bg-blue-50 text-blue-700 border border-blue-105' :
+                  dish.status === 'PREPARING' ? 'bg-amber-50 text-amber-700 border border-amber-105' :
+                  'bg-emerald-50 text-emerald-700 border border-emerald-105'
+                }`}>
+                  {dish.status === 'PENDING' ? 'Pending' : dish.status === 'PREPARING' ? 'Preparing' : 'Ready'}
+                </span>
+                <span className="text-[8.5px] text-slate-400 font-bold font-mono mt-0.5">{dish.cookingTime || '10m limit'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Progress Bar */}
+        <div className="space-y-1 mb-4">
+          <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>Prepared</span>
+            <span>{progressPercent}%</span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-1">
+            <div className="bg-emerald-600 h-1 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Card Actions Footer - Stay aligned at bottom of card */}
+      <div className="pt-3 border-t border-slate-100 flex gap-2 shrink-0">
+        {order.status === 'NEW' && (
+          <button
+            onClick={onAccept}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold uppercase py-2 rounded-xl text-[10px] tracking-wider transition cursor-pointer border border-emerald-500 h-9"
+          >
+            Accept KOT
+          </button>
+        )}
+        {(order.status === 'ACCEPTED' || order.status === 'PREPARING' || order.status === 'PARTIALLY_READY') && (
+          <>
+            <button
+              onClick={onStartPreparing}
+              className="flex-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold uppercase py-2 rounded-xl text-[10px] tracking-wider transition cursor-pointer border border-amber-500 h-9"
+            >
+              Start Preparing
+            </button>
+            <button
+              onClick={onMarkReady}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold uppercase py-2 rounded-xl text-[10px] tracking-wider transition cursor-pointer border border-emerald-500 h-9"
+            >
+              Mark Ready
+            </button>
+          </>
+        )}
+        {order.status === 'READY' && (
+          <button
+            onClick={() => onMarkReady()} // Fallback served transition
+            className="flex-1 bg-slate-700 hover:bg-slate-800 active:scale-95 text-white font-extrabold uppercase py-2 rounded-xl text-[10px] tracking-wider transition cursor-pointer border border-slate-600 h-9"
+          >
+            Serve KOT
+          </button>
+        )}
+        <button
+          onClick={onViewDetails}
+          className="bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 font-extrabold uppercase px-3 py-2 rounded-xl text-[10px] tracking-wider transition cursor-pointer border border-slate-200 h-9 shrink-0"
+        >
+          Details
+        </button>
+      </div>
+
     </div>
   );
 };

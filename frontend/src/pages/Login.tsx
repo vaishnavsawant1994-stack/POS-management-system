@@ -91,7 +91,12 @@ export const Login: React.FC = () => {
   const { login, error: authError } = useAuth();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState<LoginStep>('SYSTEM_LOGIN');
+  const [step, setStep] = useState<LoginStep>(() => {
+    if (localStorage.getItem('pos_system_logged_in') === 'true') {
+      return 'ROLE_SELECTION';
+    }
+    return 'SYSTEM_LOGIN';
+  });
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   // System credentials
@@ -141,6 +146,7 @@ export const Login: React.FC = () => {
     const success = await login(email, password, businessType, businessName);
     if (success) {
       if (businessType === 'Restaurant' || businessType === 'Cafe') {
+        localStorage.setItem('pos_system_logged_in', 'true');
         setStep('ROLE_SELECTION');
       } else {
         navigate('/');
@@ -429,7 +435,10 @@ export const Login: React.FC = () => {
               {/* Actions Footer (Horizontal Divider Removed) */}
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
                 <button
-                  onClick={() => setStep('SYSTEM_LOGIN')}
+                  onClick={() => {
+                    localStorage.removeItem('pos_system_logged_in');
+                    setStep('SYSTEM_LOGIN');
+                  }}
                   className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-black transition-colors order-2 sm:order-1 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />

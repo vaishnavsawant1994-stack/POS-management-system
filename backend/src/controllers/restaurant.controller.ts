@@ -481,11 +481,6 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
     });
     const topDishes = Object.values(counts).sort((a, b) => b.quantity - a.quantity).slice(0, 5);
 
-    // Pending Online Orders
-    const pendingOnline = await prisma.restaurantOnlineOrder.count({
-      where: { status: 'PENDING' }
-    });
-
     // Popular categories
     const categories = await prisma.menuCategory.findMany({
       where: { restaurantId: restId },
@@ -552,8 +547,7 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
       popularCategories,
       mostActiveTables,
       mostActiveWaiters,
-      lowIngredientStock: lowStock.length,
-      pendingOnlineOrders: pendingOnline
+      lowIngredientStock: lowStock.length
     });
   } catch (err: any) {
     return res.status(500).json({ message: 'Failed to fetch dashboard metrics', error: err.message });
@@ -570,9 +564,14 @@ export const getTables = async (req: Request, res: Response) => {
       where: { restaurantId: restId },
       include: {
         qrCode: true,
+        reservations: {
+          where: {
+            status: { in: ['RESERVED', 'PENDING_APPROVAL'] }
+          }
+        },
         kitchenOrders: {
           where: {
-            status: { in: ['NEW', 'ACCEPTED', 'PREPARING', 'READY', 'SERVING'] }
+            paymentStatus: 'PENDING'
           },
           include: {
             items: {
@@ -740,17 +739,18 @@ export const mergeTables = async (req: Request, res: Response) => {
 export const splitTableBill = async (req: Request, res: Response) => {
   const { tableId, splitsCount } = req.body;
   try {
-    const table = await prisma.restaurantTable.findUnique({ where: { id: tableId } });
-    if (!table || !table.activeOrderId) return res.status(404).json({ message: 'No active order for this table' });
-
-    const order = await prisma.kitchenOrder.findUnique({
-      where: { id: table.activeOrderId },
-      include: { items: { include: { menuItem: true } } }
+    const kitchenOrders = await prisma.kitchenOrder.findMany({
+      where: {
+        tableId,
+        paymentStatus: 'PENDING',
+        status: { not: 'CANCELLED' }
+      }
     });
 
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (kitchenOrders.length === 0) return res.status(404).json({ message: 'No pending orders found for this table session' });
 
-    const splitAmount = order.totalAmount / Number(splitsCount);
+    const totalAmount = kitchenOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const splitAmount = totalAmount / Number(splitsCount);
     const splitDetails = Array.from({ length: Number(splitsCount) }).map((_, i) => ({
       splitIndex: i + 1,
       amount: parseFloat(splitAmount.toFixed(2)),
@@ -758,8 +758,8 @@ export const splitTableBill = async (req: Request, res: Response) => {
     }));
 
     return res.status(200).json({
-      orderId: order.id,
-      totalAmount: order.totalAmount,
+      orderId: kitchenOrders[0]?.id || 'N/A',
+      totalAmount: totalAmount,
       splitsCount,
       splits: splitDetails
     });
@@ -2279,8 +2279,23 @@ export const getReservations = async (req: Request, res: Response) => {
 };
 
 export const createReservation = async (req: Request, res: Response) => {
-  const { customerName, mobileNumber, date, time, guests, tableId } = req.body;
+  const { customerName, mobileNumber, date, time, guests, tableId, notes, source, status } = req.body;
   try {
+    // Conflict check
+    if (tableId) {
+      const conflict = await prisma.restaurantReservation.findFirst({
+        where: {
+          tableId,
+          date,
+          time,
+          status: { in: ['RESERVED', 'PENDING_APPROVAL'] }
+        }
+      });
+      if (conflict) {
+        return res.status(400).json({ message: 'Table is already reserved for this date and time.' });
+      }
+    }
+
     const reservation = await prisma.restaurantReservation.create({
       data: {
         customerName,
@@ -2288,16 +2303,19 @@ export const createReservation = async (req: Request, res: Response) => {
         date,
         time,
         guests: Number(guests),
-        tableId,
-        status: 'RESERVED'
+        tableId: tableId || null,
+        notes: notes || null,
+        source: source || 'RECEPTION',
+        status: status || (tableId ? 'RESERVED' : 'WAITING')
       }
     });
 
-    // Mark table status
-    await prisma.restaurantTable.update({
-      where: { id: tableId },
-      data: { status: 'RESERVED' }
-    });
+    if (tableId && (status !== 'CANCELLED' && status !== 'COMPLETED')) {
+      await prisma.restaurantTable.update({
+        where: { id: tableId },
+        data: { status: 'RESERVED' }
+      });
+    }
 
     return res.status(201).json(reservation);
   } catch (err: any) {
@@ -2305,29 +2323,153 @@ export const createReservation = async (req: Request, res: Response) => {
   }
 };
 
-export const updateReservationStatus = async (req: Request, res: Response) => {
+export const editReservation = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { status } = req.body; // RESERVED, CHECKED_IN, COMPLETED, CANCELLED
+  const { customerName, mobileNumber, date, time, guests, tableId, notes, source, status } = req.body;
   try {
-    const resv = await prisma.restaurantReservation.update({
+    const current = await prisma.restaurantReservation.findUnique({ where: { id } });
+    if (!current) {
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+
+    if (tableId && (tableId !== current.tableId || date !== current.date || time !== current.time)) {
+      const conflict = await prisma.restaurantReservation.findFirst({
+        where: {
+          id: { not: id },
+          tableId,
+          date,
+          time,
+          status: { in: ['RESERVED', 'PENDING_APPROVAL'] }
+        }
+      });
+      if (conflict) {
+        return res.status(400).json({ message: 'Table is already reserved for this date and time.' });
+      }
+    }
+
+    const updated = await prisma.restaurantReservation.update({
       where: { id },
-      data: { status },
+      data: {
+        customerName,
+        mobileNumber,
+        date,
+        time,
+        guests: guests ? Number(guests) : undefined,
+        tableId: tableId !== undefined ? (tableId || null) : undefined,
+        notes: notes !== undefined ? notes : undefined,
+        source: source !== undefined ? source : undefined,
+        status: status !== undefined ? status : undefined
+      },
       include: { table: true }
     });
 
-    if (status === 'CHECKED_IN') {
-      await prisma.restaurantTable.update({
-        where: { id: resv.tableId },
-        data: { status: 'OCCUPIED' }
+    // If table changed, release old table and reserve new table
+    if (current.tableId && current.tableId !== tableId) {
+      const otherRes = await prisma.restaurantReservation.findFirst({
+        where: { tableId: current.tableId, status: 'RESERVED' }
       });
-    } else if (status === 'COMPLETED' || status === 'CANCELLED') {
+      if (!otherRes) {
+        await prisma.restaurantTable.update({
+          where: { id: current.tableId },
+          data: { status: 'AVAILABLE' }
+        });
+      }
+    }
+
+    if (tableId && (status || updated.status) === 'RESERVED') {
       await prisma.restaurantTable.update({
-        where: { id: resv.tableId },
-        data: { status: 'AVAILABLE' }
+        where: { id: tableId },
+        data: { status: 'RESERVED' }
       });
     }
 
-    return res.status(200).json(resv);
+    return res.status(200).json(updated);
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateReservationStatus = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, tableId } = req.body; // RESERVED, ARRIVED, COMPLETED, CANCELLED, WAITING, PENDING_APPROVAL
+  try {
+    const current = await prisma.restaurantReservation.findUnique({
+      where: { id },
+      include: { table: true }
+    });
+    
+    if (!current) {
+      return res.status(404).json({ message: 'Reservation not found' });
+    }
+
+    const targetTableId = tableId || current.tableId;
+
+    if (status === 'ARRIVED' && !targetTableId) {
+      return res.status(400).json({ message: 'Please assign a table before marking customer arrived.' });
+    }
+
+    const resv = await prisma.restaurantReservation.update({
+      where: { id },
+      data: { 
+        status,
+        tableId: targetTableId || null
+      },
+      include: { table: true }
+    });
+
+    let activeOrderId = null;
+
+    if (status === 'ARRIVED') {
+      // 1. Resolve waiter automatically (if assigned to this table number)
+      let waiterId = null;
+      if (resv.table) {
+        const assignment = await prisma.waiterTableAssignment.findFirst({
+          where: {
+            tableNumber: resv.table.tableNumber,
+            businessId: resv.table.restaurantId
+          }
+        });
+        if (assignment) {
+          waiterId = assignment.waiterId;
+        }
+      }
+
+      // 2. Create active dining session order
+      const order = await prisma.kitchenOrder.create({
+        data: {
+          tableId: resv.tableId,
+          source: 'RESERVATION',
+          status: 'NEW',
+          notes: resv.notes ? `[RESERVATION NOTES]: ${resv.notes}` : `Reservation arrival for ${resv.customerName}`,
+          waiterId,
+          totalAmount: 0.0,
+          paymentStatus: 'PENDING'
+        }
+      });
+
+      activeOrderId = order.id;
+
+      // 3. Mark table as OCCUPIED and set activeOrderId
+      await prisma.restaurantTable.update({
+        where: { id: resv.tableId! },
+        data: { 
+          status: 'OCCUPIED',
+          activeOrderId: order.id
+        }
+      });
+    } else if (status === 'COMPLETED' || status === 'CANCELLED') {
+      if (resv.tableId) {
+        const tableObj = await prisma.restaurantTable.findUnique({ where: { id: resv.tableId } });
+        if (tableObj && tableObj.status === 'RESERVED') {
+          await prisma.restaurantTable.update({
+            where: { id: resv.tableId },
+            data: { status: 'AVAILABLE' }
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({ reservation: resv, activeOrderId });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
@@ -2418,90 +2560,6 @@ export const createRecipe = async (req: Request, res: Response) => {
   }
 };
 
-// 9. SWIGGY / ZOMATO / ONLINE CHANNELS
-export const getOnlineOrders = async (req: Request, res: Response) => {
-  try {
-    const orders = await prisma.restaurantOnlineOrder.findMany({
-      include: {
-        kitchenOrder: {
-          include: {
-            items: {
-              include: {
-                menuItem: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    return res.status(200).json(orders);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-};
-
-export const simulateOnlineOrder = async (req: Request, res: Response) => {
-  const { source, items } = req.body; // source: SWIGGY or ZOMATO, items: [{ menuItemId, quantity, unitPrice }]
-  try {
-    let total = 0;
-    const consolidatedItemsMap = new Map<string, any>();
-    for (const it of items) {
-      const key = it.menuItemId;
-      if (consolidatedItemsMap.has(key)) {
-        const existing = consolidatedItemsMap.get(key);
-        existing.quantity += it.quantity;
-      } else {
-        consolidatedItemsMap.set(key, {
-          menuItemId: it.menuItemId,
-          quantity: it.quantity,
-          unitPrice: it.unitPrice
-        });
-      }
-    }
-    const orderItemsData = Array.from(consolidatedItemsMap.values()).map((it: any) => {
-      total += it.unitPrice * it.quantity;
-      return it;
-    });
-
-    const kOrder = await prisma.kitchenOrder.create({
-      data: {
-        source,
-        status: 'NEW',
-        totalAmount: total,
-        paymentStatus: 'PAID',
-        paymentMethod: 'UPI',
-        items: {
-          create: orderItemsData
-        }
-      }
-    });
-
-    const commission = parseFloat((total * 0.15).toFixed(2));
-    const revenue = parseFloat((total - commission).toFixed(2));
-
-    const onlineOrder = await prisma.restaurantOnlineOrder.create({
-      data: {
-        kitchenOrderId: kOrder.id,
-        orderSource: source,
-        commission,
-        revenue,
-        status: 'ACCEPTED',
-        paymentStatus: 'PAID'
-      }
-    });
-
-    // Deduct ingredients automatically
-    for (const it of items) {
-      await deductRecipeIngredients(it.menuItemId, it.quantity);
-    }
-
-    return res.status(201).json(onlineOrder);
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-};
-
 // 10. FEEDBACK
 export const submitFeedback = async (req: Request, res: Response) => {
   const { kitchenOrderId, rating, comments, customerName } = req.body;
@@ -2562,13 +2620,6 @@ export const getReports = async (req: Request, res: Response) => {
       });
     });
 
-    // Online Source Revenue
-    const onlineOrders = await prisma.restaurantOnlineOrder.findMany({
-      include: { kitchenOrder: true }
-    });
-    const swiggyRevenue = onlineOrders.filter(o => o.orderSource === 'SWIGGY').reduce((sum, o) => sum + o.revenue, 0);
-    const zomatoRevenue = onlineOrders.filter(o => o.orderSource === 'ZOMATO').reduce((sum, o) => sum + o.revenue, 0);
-
     // Waiter performance
     const waiters = await prisma.restaurantWaiter.findMany({
       where: { restaurantId: String(restaurantId) }
@@ -2578,8 +2629,6 @@ export const getReports = async (req: Request, res: Response) => {
       totalSales: orders.reduce((sum, o) => sum + o.totalAmount, 0),
       tableRevenue,
       popularDishes: Object.entries(dishes).map(([name, data]) => ({ name, ...data })),
-      swiggyRevenue,
-      zomatoRevenue,
       waiters: waiters.map(w => ({ name: w.name, orders: w.ordersServed, sales: w.salesHandled }))
     });
   } catch (err: any) {
@@ -2708,6 +2757,9 @@ export const createKitchenOrder = async (req: Request, res: Response) => {
     const kotNum = Math.floor(100 + Math.random() * 900);
     const kotLabel = `KOT-${kotNum}`;
 
+    // Disable KOT appending - always create a distinct KOT for each order.
+    // Commented out to maintain separate tickets for kitchen staff to prepare at different times.
+    /*
     if (existingOrder) {
       // Append items to existing occupied table order
       let newTotal = existingOrder.totalAmount;
@@ -2753,6 +2805,7 @@ export const createKitchenOrder = async (req: Request, res: Response) => {
       broadcast('NEW_ORDER', updatedOrder);
       return res.status(200).json(updatedOrder);
     }
+    */
 
     // Normal new order creation flow
     let total = 0;
@@ -3420,7 +3473,7 @@ export const seedDummyReadyOrders = async (req: Request, res: Response) => {
 };
 
 export const settleTableBill = async (req: Request, res: Response) => {
-  const { tableId, paymentMethod, discount, serviceCharge, tax, customerId, cashierName, customerMobile } = req.body;
+  const { tableId, paymentMethod, discount, serviceCharge, tax, customerId, cashierName, customerMobile, amountReceived, changeReturned } = req.body;
   try {
     if (!tableId) {
       return res.status(400).json({ message: 'tableId is required' });
@@ -3434,12 +3487,12 @@ export const settleTableBill = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Table not found' });
     }
 
-    if (!table.activeOrderId) {
-      return res.status(400).json({ message: 'No active order for this table' });
-    }
-
-    const kitchenOrder = await prisma.kitchenOrder.findUnique({
-      where: { id: table.activeOrderId },
+    const kitchenOrders = await prisma.kitchenOrder.findMany({
+      where: {
+        tableId: table.id,
+        paymentStatus: 'PENDING',
+        status: { not: 'CANCELLED' }
+      },
       include: {
         items: {
           include: {
@@ -3450,11 +3503,35 @@ export const settleTableBill = async (req: Request, res: Response) => {
       }
     });
 
-    if (!kitchenOrder) {
-      return res.status(404).json({ message: 'Active kitchen order not found' });
+    if (kitchenOrders.length === 0) {
+      return res.status(404).json({ message: 'No pending kitchen orders found for this table session' });
     }
 
-    const subtotal = kitchenOrder.totalAmount;
+    // Consolidate duplicate menu items from all KOTs in this session
+    const consolidatedItemsMap = new Map<string, { menuItemId: string; name: string; quantity: number; unitPrice: number; }>();
+    for (const order of kitchenOrders) {
+      for (const it of order.items) {
+        const itemId = it.menuItemId;
+        const name = it.menuItem?.name || 'Dish';
+        const price = it.unitPrice || it.menuItem?.price || 0;
+        
+        if (consolidatedItemsMap.has(itemId)) {
+          const existing = consolidatedItemsMap.get(itemId)!;
+          existing.quantity += it.quantity;
+        } else {
+          consolidatedItemsMap.set(itemId, {
+            menuItemId: itemId,
+            name,
+            quantity: it.quantity,
+            unitPrice: price
+          });
+        }
+      }
+    }
+
+    const consolidatedItemsList = Array.from(consolidatedItemsMap.values());
+    const subtotal = consolidatedItemsList.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+
     const discAmount = parseFloat(String(discount || 0));
     const scAmount = parseFloat(String(serviceCharge || 0));
     const taxAmount = parseFloat(String(tax || 0));
@@ -3471,9 +3548,9 @@ export const settleTableBill = async (req: Request, res: Response) => {
 
     // Settle Order and save POS models
     const posOrderItems = [];
-    for (const it of kitchenOrder.items) {
-      const itemName = it.menuItem?.name || 'Restaurant Dish';
-      const itemPrice = it.menuItem?.price || it.unitPrice;
+    for (const it of consolidatedItemsList) {
+      const itemName = it.name;
+      const itemPrice = it.unitPrice;
 
       let product = await prisma.product.findFirst({ where: { name: itemName } });
       if (!product) {
@@ -3541,6 +3618,9 @@ export const settleTableBill = async (req: Request, res: Response) => {
         amount: totalPayable,
         paymentMethod: paymentMethod || 'CASH',
         status: 'SUCCESS',
+        transactionId: req.body.razorpayPaymentId || null,
+        razorpayOrderId: req.body.razorpayOrderId || null,
+        razorpayPaymentId: req.body.razorpayPaymentId || null,
         cashierId
       }
     });
@@ -3572,8 +3652,8 @@ export const settleTableBill = async (req: Request, res: Response) => {
     doc.text('Item Description                     Qty       Unit Price      Total');
     doc.text('-----------------------------------------------------------------------------------');
 
-    for (const it of kitchenOrder.items) {
-      const name = it.menuItem?.name || 'Dish';
+    for (const it of consolidatedItemsList) {
+      const name = it.name;
       const line = `${name.padEnd(35)} ${String(it.quantity).padEnd(9)} ₹${String(it.unitPrice).padEnd(14)} ₹${String(it.unitPrice * it.quantity)}`;
       doc.text(line);
     }
@@ -3606,9 +3686,11 @@ export const settleTableBill = async (req: Request, res: Response) => {
       }
     });
 
-    // Update KitchenOrder status to PAID / COMPLETED
-    await prisma.kitchenOrder.update({
-      where: { id: kitchenOrder.id },
+    // Update all KitchenOrders in this session to PAID and status to SERVED
+    await prisma.kitchenOrder.updateMany({
+      where: {
+        id: { in: kitchenOrders.map(o => o.id) }
+      },
       data: {
         paymentStatus: 'PAID',
         paymentMethod: paymentMethod || 'CASH',
@@ -3617,30 +3699,39 @@ export const settleTableBill = async (req: Request, res: Response) => {
     });
 
     // Update waiter stats
-    if (kitchenOrder.waiterId) {
-      await prisma.restaurantWaiter.update({
-        where: { id: kitchenOrder.waiterId },
-        data: {
-          ordersServed: { increment: 1 },
-          salesHandled: { increment: totalPayable }
-        }
-      });
+    for (const ko of kitchenOrders) {
+      if (ko.waiterId) {
+        await prisma.restaurantWaiter.update({
+          where: { id: ko.waiterId },
+          data: {
+            ordersServed: { increment: 1 },
+            salesHandled: { increment: ko.totalAmount }
+          }
+        });
+      }
     }
 
     // Save to BillingHistory model
-    const itemsStr = kitchenOrder.items.map(it => `${it.menuItem?.name || 'Dish'} x ${it.quantity}`).join(', ');
+    const uniqueWaiterNames = Array.from(new Set(kitchenOrders.map(o => o.waiter?.name).filter(Boolean)));
+    const waiterNameStr = uniqueWaiterNames.length > 0 ? uniqueWaiterNames.join(', ') : 'Self Service';
+    const orderSources = Array.from(new Set(kitchenOrders.map(o => o.source || 'WALK_IN')));
+    const orderSourceStr = orderSources.join(', ');
+    const itemsStr = consolidatedItemsList.map(it => `${it.name} x ${it.quantity}`).join(', ');
+
     const history = await prisma.billingHistory.create({
       data: {
         invoiceNumber,
         tableNumber: table.tableNumber,
-        orderSource: kitchenOrder.source || 'WALK_IN',
+        orderSource: orderSourceStr,
         paymentMode: paymentMethod || 'CASH',
         items: itemsStr,
         totalAmount: totalPayable,
         gst: taxAmount,
-        waiterName: kitchenOrder.waiter?.name || 'Self Service',
+        waiterName: waiterNameStr,
         date: new Date().toLocaleDateString('en-GB'),
-        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        amountReceived: amountReceived ? parseFloat(String(amountReceived)) : null,
+        changeReturned: changeReturned ? parseFloat(String(changeReturned)) : null
       }
     });
 

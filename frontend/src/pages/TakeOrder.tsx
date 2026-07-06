@@ -35,7 +35,7 @@ interface Table {
   id: string;
   tableNumber: string;
   capacity: number;
-  status: 'AVAILABLE' | 'OCCUPIED' | 'WAITING_FOR_ORDER' | 'ORDER_SENT' | 'PREPARING' | 'READY' | 'SERVED' | 'RESERVED' | 'OUT_OF_SERVICE';
+  status: 'AVAILABLE' | 'OCCUPIED' | 'WAITING_FOR_ORDER' | 'ORDER_SENT' | 'PREPARING' | 'READY' | 'SERVED' | 'BILLING_PENDING' | 'RESERVED' | 'OUT_OF_SERVICE';
   assignedWaiter: string;
   customer: CustomerInfo | null;
   guestsCount: number;
@@ -201,7 +201,7 @@ export const TakeOrder: React.FC = () => {
       const apiTables = await auth.apiRequest(`/restaurant/tables`);
       if (apiTables && apiTables.length > 0) {
         const mapped = apiTables.map((t: any) => {
-          const activeOrder = (t.kitchenOrders || []).find((ko: any) => ['NEW', 'ACCEPTED', 'PREPARING', 'READY'].includes(ko.status));
+          const activeOrder = (t.kitchenOrders || []).find((ko: any) => ko.paymentStatus === 'PENDING');
           
           return {
             id: t.id,
@@ -211,10 +211,12 @@ export const TakeOrder: React.FC = () => {
               if (t.status === 'AVAILABLE') return 'AVAILABLE';
               if (t.status === 'RESERVED') return 'RESERVED';
               if (t.status === 'OUT_OF_SERVICE') return 'OUT_OF_SERVICE';
+              if (t.status === 'BILLING_PENDING') return 'BILLING_PENDING';
               if (activeOrder) {
                 if (activeOrder.status === 'NEW' || activeOrder.status === 'ACCEPTED') return 'ORDER_SENT';
                 if (activeOrder.status === 'PREPARING') return 'PREPARING';
                 if (activeOrder.status === 'READY') return 'READY';
+                if (activeOrder.status === 'SERVED') return 'SERVED';
               }
               return 'OCCUPIED';
             })() as Table['status'],
@@ -222,17 +224,19 @@ export const TakeOrder: React.FC = () => {
             customer: activeOrder ? { name: activeOrder.customerName || 'Guest', phone: '', loyaltyMember: false } : null,
             guestsCount: activeOrder?.guestsCount || (t.status === 'AVAILABLE' ? 0 : 2),
             occupiedSince: activeOrder?.createdAt || (t.status === 'AVAILABLE' ? null : new Date(Date.now() - 20 * 60000).toISOString()),
-            activeOrderItems: (t.kitchenOrders || []).flatMap((ko: any) =>
-              (ko.items || []).map((it: any) => ({
-                id: it.menuItem?.id || it.menuItemId,
-                name: it.menuItem?.name || 'Unknown Item',
-                quantity: it.quantity,
-                category: it.menuItem?.category?.name || 'Main Course',
-                specialInstructions: it.notes ? it.notes.replace(/^\[KOT-\d+\]\s*/, '') : '',
-                isSentToKitchen: true,
-                price: it.unitPrice || it.menuItem?.price || 0
-              }))
-            ),
+            activeOrderItems: (t.kitchenOrders || [])
+              .filter((ko: any) => ko.paymentStatus === 'PENDING')
+              .flatMap((ko: any) =>
+                (ko.items || []).map((it: any) => ({
+                  id: it.menuItem?.id || it.menuItemId,
+                  name: it.menuItem?.name || 'Unknown Item',
+                  quantity: it.quantity,
+                  category: it.menuItem?.category?.name || 'Main Course',
+                  specialInstructions: it.notes ? it.notes.replace(/^\[KOT-\d+\]\s*/, '') : '',
+                  isSentToKitchen: true,
+                  price: it.unitPrice || it.menuItem?.price || 0
+                }))
+              ),
             kotNumber: activeOrder ? `KOT-${activeOrder.id.slice(-4).toUpperCase()}` : (t.status === 'AVAILABLE' ? null : `KOT-${Math.floor(1000 + Math.random() * 9000)}`),
             orderTime: activeOrder ? new Date(activeOrder.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (t.status === 'AVAILABLE' ? null : new Date(Date.now() - 20 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
           };
@@ -307,6 +311,14 @@ export const TakeOrder: React.FC = () => {
 
     if (table.status === 'RESERVED' || table.status === 'OUT_OF_SERVICE') {
       notify(`Table is ${table.status}. Cannot take orders.`, 'warning');
+      return;
+    }
+
+    if (table.status === 'BILLING_PENDING') {
+      notify(`Table ${table.tableNumber} is waiting for check settlement. New orders locked.`, 'warning');
+      setSelectedTable(table);
+      setCart(table.activeOrderItems);
+      setGeneralKitchenNote('');
       return;
     }
 
@@ -775,6 +787,12 @@ export const TakeOrder: React.FC = () => {
             <span>⚪</span> Reserved
           </span>
         );
+      case 'BILLING_PENDING':
+        return (
+          <span className="text-rose-700 bg-rose-50 border border-rose-200/60 rounded-full px-2.5 py-1 text-xs font-bold inline-flex items-center gap-1">
+            <span>🔴</span> Billing Pending
+          </span>
+        );
       case 'OUT_OF_SERVICE':
         return (
           <span className="text-rose-700 bg-rose-50 border border-rose-200/60 rounded-full px-2.5 py-1 text-xs font-bold inline-flex items-center gap-1">
@@ -930,15 +948,17 @@ export const TakeOrder: React.FC = () => {
               {filteredTables.map(table => {
                 const isSelected = selectedTable?.id === table.id;
                 const isAvailable = table.status === 'AVAILABLE';
+                const runningTotal = table.activeOrderItems?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+                
                 return (
                   <div
                     key={table.id}
                     onClick={() => handleSelectTable(table)}
-                    className={`bg-white border rounded-2xl p-6 transition-all duration-200 cursor-pointer text-left ${isSelected
+                    className={`bg-white border rounded-2xl p-5 transition-all duration-200 cursor-pointer text-left ${isSelected
                         ? 'border-emerald-600 ring-2 ring-emerald-500/10 shadow-md'
                         : isAvailable
                           ? 'border-emerald-200 hover:border-emerald-400 shadow-xs hover:shadow-sm bg-emerald-50/10'
-                          : 'border-slate-200/85 hover:border-slate-300 shadow-sm hover:shadow-md'
+                          : 'border-slate-205 hover:border-slate-300 shadow-sm hover:shadow-md'
                       }`}
                   >
                     <div className="flex justify-between items-center gap-4">
@@ -946,15 +966,45 @@ export const TakeOrder: React.FC = () => {
                       <div className="shrink-0">{getStatusBadge(table.status)}</div>
                     </div>
 
-                    <div className="mt-5 grid grid-cols-2 gap-y-2.5 text-xs font-bold text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4 text-slate-400" />
-                        <span>Capacity: {table.capacity}</span>
-                      </div>
-                      {!isAvailable && (
+                    <div className="mt-4 space-y-3 text-xs font-bold text-slate-650">
+                      <div className="grid grid-cols-2 gap-y-2">
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-slate-400" />
-                          <span>Staff: {table.assignedWaiter}</span>
+                          <Users className="w-4 h-4 text-slate-400" />
+                          <span>Capacity: {table.capacity}</span>
+                        </div>
+                        {!isAvailable && (
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-slate-400" />
+                            <span>Staff: {table.assignedWaiter || 'None'}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {!isAvailable && (
+                        <div className="border-t border-slate-100 dark:border-slate-900 pt-2.5 space-y-2">
+                          <div className="flex justify-between items-center text-slate-500">
+                            <span>Customer Session:</span>
+                            <span className="text-slate-900 dark:text-white font-extrabold">{table.customer?.name || 'Walk-in Guest'}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-slate-500">
+                            <span>Running Total:</span>
+                            <span className="text-emerald-600 dark:text-emerald-450 font-black">₹{runningTotal.toFixed(2)}</span>
+                          </div>
+                          <div className="text-slate-505">
+                            <span className="block mb-1 text-slate-450 text-[10px] uppercase tracking-wider">Current Orders:</span>
+                            <div className="pl-2 border-l-2 border-slate-200 dark:border-slate-800 space-y-1 text-[10px] text-slate-600 dark:text-slate-400 max-h-[60px] overflow-y-auto font-mono">
+                              {table.activeOrderItems && table.activeOrderItems.length > 0 ? (
+                                table.activeOrderItems.map((it, idx) => (
+                                  <div key={idx} className="flex justify-between font-semibold">
+                                    <span className="truncate max-w-[140px] font-sans">{it.name}</span>
+                                    <span>x{it.quantity}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <span className="italic text-slate-405 font-medium">No items ordered yet</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -17,7 +17,8 @@ import {
   LogOut,
   History,
   RotateCcw,
-  RefreshCw
+  RefreshCw,
+  Receipt
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -80,6 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Active Tables', path: '/restaurant/active-tables', icon: Layers },
     { name: 'Take Order', path: '/restaurant/take-order', icon: Calculator },
+    { name: 'Billing Counter', path: '/restaurant/cashier-dashboard', icon: CreditCard },
     { name: 'Kitchen Dashboard', path: '/restaurant/kitchen-dashboard', icon: LayoutDashboard },
     { name: 'Kitchen Orders', path: '/restaurant/kitchen', icon: Archive },
     { name: 'Recipe Management', path: '/restaurant/recipes', icon: Package },
@@ -90,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Reservations', path: '/restaurant/reservations', icon: UserCheck },
     { name: 'Inventory', path: '/restaurant/inventory', icon: Archive },
     { name: 'Suppliers', path: '/restaurant/suppliers', icon: Users },
-    { name: 'Online Channels', path: '/restaurant/online-orders', icon: ShoppingBag },
+    { name: 'Expense Management', path: '/restaurant/expense-management', icon: Receipt },
     { name: 'Restaurant Reports', path: '/restaurant/reports', icon: BarChart2 },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
@@ -105,7 +107,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { name: 'Take Order', path: '/restaurant/take-order', icon: Calculator },
         { name: 'Waiter Console', path: '/restaurant/waiter-dashboard', icon: UserCheck },
         { name: 'Tables', path: '/restaurant/tables', icon: Archive },
-        { name: 'Reservations', path: '/restaurant/reservations', icon: UserCheck },
         { name: 'Self Service', path: '/restaurant/employees', icon: Users },
       ];
     }
@@ -131,12 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     if (role === 'CASHIER') {
       return [
-        { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-        { name: 'Active Tables', path: '/restaurant/active-tables', icon: Layers },
-        { name: 'Take Order', path: '/restaurant/take-order', icon: Calculator },
-        { name: 'Tables', path: '/restaurant/tables', icon: Archive },
-        { name: 'Reservations', path: '/restaurant/reservations', icon: UserCheck },
-        { name: 'Self Service', path: '/restaurant/employees', icon: Users },
+        { name: 'Billing Counter', path: '/restaurant/cashier-dashboard', icon: CreditCard },
       ];
     }
 
@@ -153,6 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (role === 'EMPLOYEE') {
       return [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+        { name: 'Expense Management', path: '/restaurant/expense-management', icon: Receipt },
         { name: 'Self Service', path: '/restaurant/employees', icon: Users },
       ];
     }

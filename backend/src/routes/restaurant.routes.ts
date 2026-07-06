@@ -29,14 +29,13 @@ import {
   readWaiterNotification,
   getReservations,
   createReservation,
+  editReservation,
   updateReservationStatus,
   getIngredients,
   createIngredient,
   updateIngredientStock,
   getRecipes,
   createRecipe,
-  getOnlineOrders,
-  simulateOnlineOrder,
   submitFeedback,
   getReports,
   getKitchenOrderById,
@@ -190,6 +189,7 @@ router.put('/waiter-notifications/:id/read', readWaiterNotification);
 // Reservations
 router.get('/reservations', getReservations);
 router.post('/reservations', createReservation);
+router.put('/reservations/:id', editReservation);
 router.put('/reservations/:id/status', updateReservationStatus);
 
 // Ingredients & Recipes
@@ -198,10 +198,6 @@ router.post('/ingredients', createIngredient);
 router.put('/ingredients/:id/stock', updateIngredientStock);
 router.get('/recipes', getRecipes);
 router.post('/recipes', createRecipe);
-
-// Swiggy & Zomato
-router.get('/online-orders', getOnlineOrders);
-router.post('/online-orders/simulate', simulateOnlineOrder);
 
 // Customer Feedback
 router.post('/feedback', submitFeedback);

@@ -31,6 +31,10 @@ model User {
   branch        Branch?                 @relation(fields: [branchId], references: [id])
   sessions      LoginSession[]
   employee      Employee?
+  expensesCreated   Expense[]                @relation("ExpenseCreator")
+  expensesUpdated   Expense[]                @relation("ExpenseUpdater")
+  expenseApprovals  ExpenseApprovalHistory[]
+  expensePayments   ExpensePaymentDetails[]
 
   @@map("users")
 }
@@ -436,6 +440,9 @@ model ShopSettings {
   smtpPassword           String?  @map("smtp_password")
   ownerName              String?  @map("owner_name")
   autoOpenPrintPreview   Boolean  @default(false) @map("auto_open_print_preview")
+  upiId                  String?  @default("merchant@okaxis") @map("upi_id")
+  razorpayKeyId          String?  @map("razorpay_key_id")
+  razorpaySecret         String?  @map("razorpay_secret")
 
   @@map("shop_settings")
 }
@@ -541,6 +548,7 @@ model PurchaseOrder {
   replacements         Replacement[]
   returnsList          Return[]
   kitchenRequests      KitchenStockRequest[]
+  expenses             Expense[]
 
   @@map("purchase_orders")
   @@index([status])
@@ -1072,7 +1080,6 @@ model KitchenOrder {
   table             RestaurantTable?   @relation(fields: [tableId], references: [id], onDelete: SetNull)
   waiter            RestaurantWaiter?  @relation(fields: [waiterId], references: [id], onDelete: SetNull)
   items             KitchenOrderItem[]
-  onlineOrder       RestaurantOnlineOrder?
   feedback          RestaurantFeedback?
   serviceTasks      ServiceTask[]
 
@@ -1109,17 +1116,19 @@ model KitchenOrderItem {
 }
 
 model RestaurantReservation {
-  id           String          @id @default(uuid())
+  id           String           @id @default(uuid())
   customerName String
   mobileNumber String
   date         String
   time         String
   guests       Int
-  tableId      String
-  status       String          @default("RESERVED") // RESERVED, CHECKED_IN, COMPLETED, CANCELLED
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  table        RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tableId      String?
+  status       String           @default("RESERVED") // RESERVED, CHECKED_IN, ARRIVED, COMPLETED, CANCELLED, WAITING
+  notes        String?
+  source       String           @default("RECEPTION") // RECEPTION, WEBSITE, PHONE, WALK_IN
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  table        RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
   @@map("restaurant_reservations")
 }
@@ -1147,21 +1156,6 @@ model RestaurantWaiter {
   employee          Employee?               @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@map("restaurant_waiters")
-}
-
-model RestaurantOnlineOrder {
-  id             String       @id @default(uuid())
-  kitchenOrderId String       @unique
-  orderSource    String // SWIGGY, ZOMATO, DIRECT_WEBSITE, QR
-  commission     Float        @default(0.0)
-  revenue        Float        @default(0.0)
-  status         String       @default("PENDING")
-  paymentStatus  String       @default("PENDING")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  kitchenOrder   KitchenOrder @relation(fields: [kitchenOrderId], references: [id], onDelete: Cascade)
-
-  @@map("restaurant_online_orders")
 }
 
 model RestaurantFeedback {
@@ -1253,10 +1247,12 @@ model BillingHistory {
   items         String   @map("items")
   totalAmount   Float    @map("total_amount")
   gst           Float
-  waiterName    String   @map("waiter_name")
-  date          String
-  time          String
-  createdAt     DateTime @default(now()) @map("created_at")
+  waiterName     String   @map("waiter_name")
+  date           String
+  time           String
+  amountReceived Float?   @map("amount_received")
+  changeReturned Float?   @map("change_returned")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("billing_history")
 }
@@ -1438,6 +1434,7 @@ model RestaurantPurchaseOrder {
   createdAt  DateTime                      @default(now())
   updatedAt  DateTime                      @updatedAt
   items      RestaurantPurchaseOrderItem[]
+  expenses   Expense[]
 
   @@map("restaurant_purchase_orders")
   @@index([supplierId])
@@ -1589,5 +1586,83 @@ model EmployeeSalary {
   employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@map("employee_salaries")
+}
+
+model ExpenseCategory {
+  id          String    @id @default(uuid()) @map("category_id")
+  name        String    @unique @map("category_name")
+  description String?   @map("description")
+  isCustom    Boolean   @default(false) @map("is_custom")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  expenses    Expense[]
+
+  @@map("expense_categories")
+}
+
+model Expense {
+  id                         String                    @id @default(uuid()) @map("expense_id")
+  displayId                  String                    @unique @map("display_id")
+  title                      String                    @map("title")
+  amount                     Float                     @map("amount")
+  categoryId                 String                    @map("category_id")
+  category                   ExpenseCategory           @relation(fields: [categoryId], references: [id])
+  paymentMethod              String                    @map("payment_method")
+  expenseDate                DateTime                  @map("expense_date")
+  vendor                     String?                   @map("vendor")
+  description                String?                   @map("description")
+  status                     String                    @default("Draft") @map("status")
+  createdAt                  DateTime                  @default(now()) @map("created_at")
+  updatedAt                  DateTime                  @updatedAt @map("updated_at")
+  createdById                String                    @map("created_by_id")
+  createdByUser              User                      @relation("ExpenseCreator", fields: [createdById], references: [id])
+  lastUpdatedById            String?                   @map("last_updated_by_id")
+  lastUpdatedByUser          User?                     @relation("ExpenseUpdater", fields: [lastUpdatedById], references: [id])
+  purchaseOrderId            String?                   @map("purchase_order_id")
+  purchaseOrder              PurchaseOrder?            @relation(fields: [purchaseOrderId], references: [id])
+  restaurantPurchaseOrderId  String?                   @map("restaurant_purchase_order_id")
+  restaurantPurchaseOrder    RestaurantPurchaseOrder?  @relation(fields: [restaurantPurchaseOrderId], references: [id])
+  receipts                   ExpenseReceipt[]
+  approvals                  ExpenseApprovalHistory[]
+  paymentDetails             ExpensePaymentDetails?
+
+  @@map("expenses")
+}
+
+model ExpenseReceipt {
+  id         String   @id @default(uuid()) @map("receipt_id")
+  expenseId  String   @map("expense_id")
+  expense    Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  fileName   String   @map("file_name")
+  fileUrl    String   @map("file_url")
+  fileType   String?  @map("file_type")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  @@map("expense_receipts")
+}
+
+model ExpenseApprovalHistory {
+  id          String   @id @default(uuid()) @map("approval_id")
+  expenseId   String   @map("expense_id")
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  status      String   @map("status")
+  notes       String?  @map("notes")
+  actionById  String   @map("action_by_id")
+  actionByUser User     @relation(fields: [actionById], references: [id])
+  actionDate  DateTime @default(now()) @map("action_date")
+
+  @@map("expense_approval_histories")
+}
+
+model ExpensePaymentDetails {
+  id                   String    @id @default(uuid()) @map("payment_details_id")
+  expenseId            String    @unique @map("expense_id")
+  expense              Expense   @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  paidAt               DateTime? @map("paid_at")
+  transactionReference String?   @map("transaction_reference")
+  paidById             String?   @map("paid_by_id")
+  paidByUser           User?     @relation(fields: [paidById], references: [id])
+
+  @@map("expense_payment_details")
 }
 

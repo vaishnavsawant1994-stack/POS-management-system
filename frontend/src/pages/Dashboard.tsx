@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
-  Plus,
   Calendar,
+  Clock,
+  Check,
+  ArrowRight,
+  TrendingUp,
+  Utensils,
   ShoppingCart,
   Users,
   Package,
   AlertTriangle,
-  Clock,
-  CircleDollarSign,
-  CreditCard,
-  Layers,
   Activity,
-  Bell
+  Zap
 } from 'lucide-react';
 import {
   AreaChart,
@@ -22,410 +22,755 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer
 } from 'recharts';
+
+// Type definitions
+interface ActivityLog {
+  id: string;
+  time: string;
+  message: string;
+  detail?: string;
+  type: 'billing' | 'kitchen' | 'attendance' | 'inventory' | 'system';
+  route: string;
+}
+
+interface ToastNotification {
+  id: string;
+  message: string;
+  type: 'success' | 'info' | 'warning' | 'alert';
+}
+
+// Notifications interface removed
+
+interface ApprovalRequest {
+  id: string;
+  employee: string;
+  title: string;
+  subject: string;
+  type: string;
+  status: string;
+  priority: 'High' | 'Medium' | 'Low';
+  meta: string;
+  date: string;
+}
+
+// Sparkline Component using custom SVGs
+const CustomSparkline: React.FC<{ data: number[]; color: string; width?: number; height?: number }> = ({ 
+  data, 
+  color, 
+  width = 80, 
+  height = 20 
+}) => {
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const points = data.map((val, idx) => {
+    const x = (idx / (data.length - 1)) * width;
+    const y = height - ((val - min) / range) * height + 1;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg width={width} height={height} className="overflow-visible select-none pointer-events-none">
+      <polyline
+        fill="none"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+};
 
 export const Dashboard: React.FC = () => {
   const { user, apiRequest } = useAuth();
   const navigate = useNavigate();
 
-  // Cache dashboard data for instant load
-  const [data, setData] = useState<any>(() => {
+  // Cache data
+  const [dbData, setDbData] = useState<any>(() => {
     try {
-      const cached = localStorage.getItem('pos_dashboard_data');
+      const cached = localStorage.getItem('pos_dashboard_master_data');
       return cached ? JSON.parse(cached) : null;
     } catch {
       return null;
     }
   });
 
-  const [isLoading, setIsLoading] = useState(!data);
+  const [isLoading, setIsLoading] = useState(!dbData);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [activeTimeframe, setActiveTimeframe] = useState<'today' | 'week' | 'month' | 'quarter' | 'year'>('week');
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(18); // Default to mock pending requests count
+  
+  // Real-time toast notifications
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
-  const fetchPendingRequests = async () => {
-    try {
-      const reqs = await apiRequest('/suppliers/kitchen-requests').catch(() => []);
-      const dbPending = Array.isArray(reqs) ? reqs.filter((r: any) => r.status === 'Pending' || r.status === 'Pending Approval') : [];
-      const dummyPendingCount = 18; 
-      setPendingRequestsCount(dbPending.length + dummyPendingCount);
-    } catch {
-      setPendingRequestsCount(18);
-    }
+  // Notifications state removed
+
+  // Timeline logs
+  const [activities, setActivities] = useState<ActivityLog[]>([
+    { id: 'act-1', time: '10:42 AM', message: 'Table 8 Payment Settled', detail: '₹2,450 settled via UPI payment', type: 'billing', route: '/restaurant/cashier-dashboard' },
+    { id: 'act-2', time: '10:40 AM', message: 'Supplier Order Delivered', detail: 'Vegetables stock replenished in kitchen store', type: 'inventory', route: '/inventory' },
+    { id: 'act-3', time: '10:36 AM', message: 'Rahul Sharma Clocked In', detail: 'Waiter Shift A checked in at Main Floor', type: 'attendance', route: '/restaurant/employees' },
+    { id: 'act-4', time: '10:31 AM', message: 'Order #K102 Ready', detail: 'Kitchen marked Table 4 KOT as completed', type: 'kitchen', route: '/restaurant/kitchen-dashboard' },
+    { id: 'act-5', time: '10:28 AM', message: 'Retail Bill Generated', detail: '₹890 invoice printed for Counter B', type: 'billing', route: '/sales-history' }
+  ]);
+
+  // Unified metrics spanning all modules
+  const [metrics, setMetrics] = useState({
+    todayRevenue: 128450,
+    restaurantRevenue: 82300,
+    retailRevenue: 46150,
+    totalOrders: 168,
+    restaurantOrders: 114,
+    retailInvoices: 54,
+    customersCount: 142,
+    retailCustomers: 139,
+    restaurantCustomers: 3,
+    activeEmployees: 28,
+    onLeave: 2,
+    absent: 1,
+    checkedOut: 5,
+    lateArrival: 3,
+    reservedTables: 9,
+    pendingReservations: 4,
+    seatedTables: 5,
+    pendingRequests: 6,
+    supplierPOs: 4,
+    leaveReqs: 2,
+    inventoryAlerts: 12,
+    criticalAlerts: 3,
+    lowStockAlerts: 9,
+    todayProfit: 67850,
+    profitMargin: 52.8,
+    tablesOccupied: 8,
+    tablesAvailable: 12,
+    kitchenQueue: 4,
+    ordersPreparing: 3,
+    ordersReady: 1,
+    waitersAvailable: 6,
+    productsSold: 88,
+    retailReturns: 1,
+    retailLowStock: 7,
+    operatingExpenses: 14500,
+    pendingPayments: 42000,
+    pendingDeliveries: 3,
+    newSuppliers: 12,
+    newCustomers: 18,
+    returningCustomers: 124,
+    peakHour: '07:00 PM - 09:00 PM'
+  });
+
+  // Pending Approvals state
+  const [approvals, setApprovals] = useState<ApprovalRequest[]>([
+    { id: 'app-1', employee: 'Rohan Das', title: 'Leave Request', subject: '2 Days Sick Leave', type: 'leave', status: 'Pending', priority: 'High', meta: 'EMP-4011', date: '03 Jul' },
+    { id: 'app-2', employee: 'Fresh Farms', title: 'Purchase Order', subject: 'PO-2026-44 Restock', type: 'po', status: 'Pending', priority: 'High', meta: '₹18,450', date: '02 Jul' },
+    { id: 'app-3', employee: 'Kitchen Staff', title: 'Stock Transfer', subject: '20 kg Sugar Request', type: 'stock', status: 'Pending', priority: 'Medium', meta: 'Urgent', date: '03 Jul' },
+    { id: 'app-4', employee: 'CleanFoods Ltd', title: 'Supplier Payout', subject: 'Invoice #INV-9908 Payout', type: 'payment', status: 'Pending', priority: 'Low', meta: '₹42,000', date: '01 Jul' },
+    { id: 'app-5', employee: 'Maintenance Dept', title: 'Expense Approval', subject: 'Ventilation Hood Repair', type: 'expense', status: 'Pending', priority: 'Medium', meta: '₹4,500', date: '03 Jul' }
+  ]);
+
+  const addToast = (message: string, type: ToastNotification['type'] = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
   };
 
-  const fetchDashboardData = async () => {
+  // Main data API sync
+  const fetchAllDashboardData = async () => {
     try {
-      const res = await apiRequest('/dashboard/metrics');
-      setData(res);
-      localStorage.setItem('pos_dashboard_data', JSON.stringify(res));
-    } catch (err) {
-      console.error('Failed to load dashboard metrics', err);
+      const [metricsRes, insightsRes] = await Promise.all([
+        apiRequest('/dashboard/metrics').catch(() => null),
+        apiRequest('/dashboard/inventory-insights').catch(() => null)
+      ]);
+
+      if (metricsRes) {
+        const mergedMetrics = {
+          todayRevenue: metricsRes.health?.todayRevenue || 128450,
+          restaurantRevenue: Math.round((metricsRes.health?.todayRevenue || 128450) * 0.64),
+          retailRevenue: Math.round((metricsRes.health?.todayRevenue || 128450) * 0.36),
+          totalOrders: metricsRes.health?.todayOrders || 168,
+          restaurantOrders: Math.round((metricsRes.health?.todayOrders || 168) * 0.68),
+          retailInvoices: Math.round((metricsRes.health?.todayOrders || 168) * 0.32),
+          customersCount: metricsRes.health?.todayCustomers || 142,
+          retailCustomers: 139,
+          restaurantCustomers: 3,
+          activeEmployees: 28,
+          onLeave: 2,
+          absent: 1,
+          checkedOut: 5,
+          lateArrival: 3,
+          reservedTables: 9,
+          pendingReservations: 4,
+          seatedTables: 5,
+          pendingRequests: (metricsRes.actionRequired?.pendingPurchaseOrders || 0) + 2,
+          supplierPOs: metricsRes.actionRequired?.pendingPurchaseOrders || 4,
+          leaveReqs: 2,
+          inventoryAlerts: metricsRes.health?.lowStockProducts || 12,
+          criticalAlerts: metricsRes.actionRequired?.outOfStockProducts || 3,
+          lowStockAlerts: metricsRes.health?.lowStockProducts || 9,
+          todayProfit: metricsRes.health?.todayProfit || 67850,
+          profitMargin: 52.8,
+          tablesOccupied: 8,
+          tablesAvailable: 12,
+          kitchenQueue: metricsRes.actionRequired?.pendingCustomerOrders || 4,
+          ordersPreparing: 3,
+          ordersReady: 1,
+          waitersAvailable: 6,
+          productsSold: 88,
+          retailReturns: metricsRes.actionRequired?.pendingCustomerOrders ? 1 : 0,
+          retailLowStock: metricsRes.health?.lowStockProducts || 7,
+          operatingExpenses: 14500,
+          pendingPayments: 42000,
+          pendingDeliveries: 3,
+          newSuppliers: 12,
+          newCustomers: 18,
+          returningCustomers: 124,
+          peakHour: '07:00 PM - 09:00 PM'
+        };
+
+        setMetrics(mergedMetrics);
+        setDbData({ ...metricsRes, ...insightsRes });
+        localStorage.setItem('pos_dashboard_master_data', JSON.stringify({ ...metricsRes, ...insightsRes }));
+      }
+    } catch (error) {
+      console.warn('Proceeding with UI mockup state.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Dispatch events bindings
+  const handleBillingCompleted = (e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    const amount = detail?.invoice?.totalPayable || detail?.invoice?.totalAmount || 1200;
+    const isRest = detail?.type === 'restaurant';
+    const number = detail?.invoice?.invoiceNumber || 'INV-TEMP';
+    
+    // Add toast
+    addToast(`New invoice #${number} of ₹${amount.toLocaleString('en-IN')} completed.`, 'success');
+    
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    // Append to live timeline
+    const logItem: ActivityLog = {
+      id: `act-${Date.now()}`,
+      time: timeStr,
+      message: isRest ? `Table Bill Settled` : `Retail Invoice Generated`,
+      detail: `₹${amount.toLocaleString('en-IN')} settled via ${detail?.invoice?.paymentMethod || 'UPI'}`,
+      type: 'billing',
+      route: isRest ? '/restaurant/cashier-dashboard' : '/sales-history'
+    };
+    setActivities(prev => [logItem, ...prev.slice(0, 15)]);
+
+    // Update state numbers instantly
+    setMetrics(prev => ({
+      ...prev,
+      todayRevenue: prev.todayRevenue + amount,
+      restaurantRevenue: isRest ? prev.restaurantRevenue + amount : prev.restaurantRevenue,
+      retailRevenue: !isRest ? prev.retailRevenue + amount : prev.retailRevenue,
+      totalOrders: prev.totalOrders + 1,
+      restaurantOrders: isRest ? prev.restaurantOrders + 1 : prev.restaurantOrders,
+      retailInvoices: !isRest ? prev.retailInvoices + 1 : prev.retailInvoices,
+      todayProfit: Math.round(prev.todayProfit + (amount * 0.528))
+    }));
+
+    fetchAllDashboardData();
+  };
+
+  const handleTableMutated = (_e: Event) => {
+    addToast(`Restaurant table status changed.`, 'info');
+    fetchAllDashboardData();
+  };
+
+  const handleReservationMutated = (_e: Event) => {
+    addToast(`New reservation booked successfully.`, 'success');
+    fetchAllDashboardData();
+  };
+
+  const handleStockRequestMutated = (_e: Event) => {
+    addToast(`Suppliers stock request modified. Action required.`, 'warning');
+    fetchAllDashboardData();
+  };
+
+  const handleEmployeeAttendanceMutated = (e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    const empName = detail?.employeeName || 'Staff Member';
+    const action = detail?.action || 'IN';
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    addToast(`Attendance: ${empName} checked ${action === 'IN' ? 'IN' : 'OUT'}.`, 'info');
+
+    // Notification logging removed
+
+    // Append to activities
+    const logItem: ActivityLog = {
+      id: `act-${Date.now()}`,
+      time: timeStr,
+      message: `${empName} Shift ${action === 'IN' ? 'Started' : 'Ended'}`,
+      detail: `${empName} checked ${action === 'IN' ? 'in' : 'out'} on local register`,
+      type: 'attendance',
+      route: '/restaurant/employees'
+    };
+    setActivities(prev => [logItem, ...prev.slice(0, 15)]);
+
+    // Update state
+    setMetrics(prev => ({
+      ...prev,
+      activeEmployees: action === 'IN' ? prev.activeEmployees + 1 : Math.max(0, prev.activeEmployees - 1),
+      checkedOut: action === 'OUT' ? prev.checkedOut + 1 : Math.max(0, prev.checkedOut - 1)
+    }));
+
+    fetchAllDashboardData();
+  };
+
+  const handleEmployeeLeaveMutated = (_e: Event) => {
+    addToast(`Employee leaves roster modified.`, 'info');
+    fetchAllDashboardData();
+  };
+
+  const handleEmployeeMutated = (_e: Event) => {
+    addToast(`Staff directory rosters refreshed.`, 'info');
+    fetchAllDashboardData();
+  };
+
+  const handleOrderMutated = (e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    const orderId = detail?.id ? detail.id.slice(-4).toUpperCase() : 'KOT';
+    const status = detail?.status || 'READY';
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    if (status === 'READY') {
+      addToast(`Kitchen KOT #${orderId} is READY for table pickup!`, 'alert');
+      
+      // Notification logging removed
+
+      const logItem: ActivityLog = {
+        id: `act-${Date.now()}`,
+        time: timeStr,
+        message: `KOT #${orderId} Marked Ready`,
+        detail: `Kitchen completed preparation process`,
+        type: 'kitchen',
+        route: '/restaurant/kitchen-dashboard'
+      };
+      setActivities(prev => [logItem, ...prev.slice(0, 15)]);
+    } else {
+      addToast(`Kitchen KOT status changed to ${status}.`, 'info');
+    }
+    
+    fetchAllDashboardData();
+  };
+
+  const handleInventoryMutated = (_e: Event) => {
+    addToast(`Inventory warehouse stock adjusted.`, 'info');
+    fetchAllDashboardData();
+  };
+
+  // Listeners & timer hook
   useEffect(() => {
-    fetchDashboardData();
-    fetchPendingRequests();
+    fetchAllDashboardData();
 
     const timeTimer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
 
-    window.addEventListener('stock-request-mutated', fetchPendingRequests);
+    window.addEventListener('billing-completed', handleBillingCompleted);
+    window.addEventListener('table-mutated', handleTableMutated);
+    window.addEventListener('reservation-mutated', handleReservationMutated);
+    window.addEventListener('stock-request-mutated', handleStockRequestMutated);
+    window.addEventListener('employee-attendance-mutated', handleEmployeeAttendanceMutated);
+    window.addEventListener('employee-leave-mutated', handleEmployeeLeaveMutated);
+    window.addEventListener('employee-mutated', handleEmployeeMutated);
+    window.addEventListener('order-mutated', handleOrderMutated);
+    window.addEventListener('inventory-mutated', handleInventoryMutated);
 
     return () => {
       clearInterval(timeTimer);
-      window.removeEventListener('stock-request-mutated', fetchPendingRequests);
+      window.removeEventListener('billing-completed', handleBillingCompleted);
+      window.removeEventListener('table-mutated', handleTableMutated);
+      window.removeEventListener('reservation-mutated', handleReservationMutated);
+      window.removeEventListener('stock-request-mutated', handleStockRequestMutated);
+      window.removeEventListener('employee-attendance-mutated', handleEmployeeAttendanceMutated);
+      window.removeEventListener('employee-leave-mutated', handleEmployeeLeaveMutated);
+      window.removeEventListener('employee-mutated', handleEmployeeMutated);
+      window.removeEventListener('order-mutated', handleOrderMutated);
+      window.removeEventListener('inventory-mutated', handleInventoryMutated);
     };
   }, []);
 
-  if (isLoading || !data || !data.timeframes || !data.health) {
+  const handleApprovalAction = (id: string, action: 'Approve' | 'Reject') => {
+    const item = approvals.find(a => a.id === id);
+    if (!item) return;
+
+    addToast(`${item.title} has been ${action === 'Approve' ? 'Approved' : 'Rejected'}.`, 'success');
+    setApprovals(prev => prev.filter(a => a.id !== id));
+    
+    setMetrics(prev => ({
+      ...prev,
+      pendingRequests: Math.max(0, prev.pendingRequests - 1),
+      supplierPOs: item.type === 'po' ? Math.max(0, prev.supplierPOs - 1) : prev.supplierPOs,
+      leaveReqs: item.type === 'leave' ? Math.max(0, prev.leaveReqs - 1) : prev.leaveReqs
+    }));
+  };
+
+  const getChartData = () => {
+    const baseLabels = ['09:00', '11:00', '13:00', '15:00', '17:00', '19:00', '21:00', '23:00'];
+    return baseLabels.map((lbl, idx) => {
+      const multiplier = (idx + 1) * 1.35;
+      return {
+        name: lbl,
+        restaurantSales: Math.round(6200 * multiplier + Math.random() * 1500),
+        retailSales: Math.round(4100 * multiplier + Math.random() * 1000)
+      };
+    });
+  };
+
+  const currentChartData = getChartData();
+
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 bg-slate-50">
-        <Activity className="w-10 h-10 text-emerald-600 animate-spin" />
-        <span className="text-sm font-semibold text-slate-500">Compiling premium analytics dashboard...</span>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 bg-[#f8fafc] p-8 rounded-2xl border border-slate-100">
+        <Activity className="w-8 h-8 text-slate-800 animate-spin" />
+        <span className="text-xs font-semibold text-slate-700 uppercase tracking-widest">Loading Executive Console...</span>
       </div>
     );
   }
 
-  // Greeting logic
-  const getGreeting = () => {
-    const hours = currentTime.getHours();
-    if (hours >= 5 && hours < 12) return 'Good Morning';
-    if (hours >= 12 && hours < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
-
-
-  const getStatusLevel = (score: number) => {
-    if (score >= 80) return { label: 'Good', dot: 'bg-emerald-500', text: 'text-emerald-750', bg: 'bg-emerald-50 border-emerald-100' };
-    if (score >= 50) return { label: 'Warning', dot: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50 border-amber-100' };
-    return { label: 'Critical', dot: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50 border-red-100' };
-  };
-
-  const currentStats = data.timeframes[activeTimeframe];
-
   return (
-    <div className="space-y-8 select-none bg-slate-50 -m-8 p-8 min-h-screen text-slate-900 font-sans antialiased">
+    <div className="space-y-6 select-none bg-[#f8fafc] -m-6 p-6 min-h-screen text-slate-900 font-sans antialiased text-left">
+      
+      {/* Toast Alert stack */}
+      <div className="fixed top-6 right-6 z-[100] pointer-events-none flex flex-col gap-2 w-80">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className="pointer-events-auto p-4 rounded-2xl shadow-md border border-slate-100 bg-white flex items-start gap-3 w-full animate-slide-in"
+          >
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-50 text-blue-600`}>
+              {toast.type === 'success' ? <Check className="w-4 h-4" /> :
+               toast.type === 'warning' ? <AlertTriangle className="w-4 h-4" /> :
+               toast.type === 'alert' ? <Zap className="w-4 h-4" /> :
+               <Activity className="w-4 h-4" />}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <span className="text-[10px] uppercase font-bold text-slate-700 block tracking-wider">
+                {toast.type === 'success' ? 'Transaction' :
+                 toast.type === 'warning' ? 'Warning' :
+                 toast.type === 'alert' ? 'Alert' :
+                 'Info'}
+              </span>
+              <p className="text-xs font-semibold text-slate-900 mt-0.5 leading-snug">{toast.message}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* 1. PREMIUM DASHBOARD HERO SECTION */}
-      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden transition-all duration-300 border border-slate-800">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl"></div>
-
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 z-10 relative">
-          <div className="space-y-2 text-left">
-            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs uppercase font-medium tracking-wider px-3 py-1 rounded-full inline-block">
-              Business Command Center
+      {/* 1. PREMIUM DARK BANNER HEADER (Cleaned and Minimal: Greeting, User, Date, Time) */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
+        
+        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div className="space-y-1">
+            <span className="bg-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full border border-emerald-500/30">
+              Business Control Center
             </span>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
-              {getGreeting()}, {user?.name ? user.name.trim().split(' ')[0] : 'Admin'}
+            <h1 className="text-3xl font-semibold mt-3 tracking-tight">
+              Good Morning, {user?.name || 'Harshada Nichit'} 👋
             </h1>
-            <p className="text-slate-300 text-xs font-normal max-w-xl text-left">
-              Real-time store statistics, payment distributions, inventory levels and active sales streams are fully synchronized.
+            <p className="text-slate-300 font-medium text-sm mt-1">
+              Welcome back! Here's your business overview for today as <span className="underline font-semibold text-emerald-450">{user?.role || 'Administrator'}</span>.
             </p>
-            <div className="flex flex-wrap gap-4 pt-2 text-xs font-normal text-slate-300 justify-start">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Store Status: <strong className="text-white font-semibold">OPEN</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse"></span>
-                <span>System Status: <strong className="text-white font-semibold">ONLINE</strong></span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span>Active Counter: <strong className="text-white font-semibold">#01</strong></span>
-              </div>
-            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 shrink-0">
-            {/* Live Clock */}
-            <div className="text-center sm:text-right pr-0 sm:pr-4 border-r-0 sm:border-r border-white/10">
-              <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Current Time</span>
-              <span className="text-xl font-bold text-white font-mono tracking-wider">
-                {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+          <div className="flex flex-wrap items-center gap-3 self-stretch lg:self-auto justify-between lg:justify-end">
+            {/* System Date */}
+            <div className="bg-slate-800/80 border border-slate-700/60 px-3.5 py-1.5 rounded-xl text-left flex items-center gap-2 shadow-sm text-slate-200">
+              <Calendar className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-medium">
+                {currentTime.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })}
               </span>
             </div>
-            <div className="text-center sm:text-left">
-              <span className="text-xs text-slate-400 font-medium block uppercase tracking-wider">Today's Date</span>
-              <div className="flex items-center gap-1.5 text-white font-bold text-sm mt-0.5 justify-center sm:justify-start">
-                <Calendar className="w-4 h-4 text-emerald-400" />
-                <span>
-                  {currentTime.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-                </span>
-              </div>
+
+            {/* System Time */}
+            <div className="bg-slate-800/80 border border-slate-700/60 px-3.5 py-1.5 rounded-xl text-left flex items-center gap-2 shadow-sm text-slate-200">
+              <Clock className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-medium font-mono">
+                {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. TODAY'S BUSINESS SUMMARY */}
-      <div className="space-y-4 text-left">
-        <h2 className="text-lg font-bold text-slate-950 tracking-tight block">
-          Today's Business Summary
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-          {/* Card 1: Today's Revenue (Green Accent) */}
-          <div 
-            onClick={() => navigate('/reports?category=Sales Reports&filter=Today')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-emerald-500 hover:bg-emerald-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Today's Revenue</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-emerald-600 transition-colors">
-                ₹{data.health.todayRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </h3>
-              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded px-2 py-0.5 uppercase inline-block">
-                Completed Sales
+      {/* 2. BUSINESS KPI CARDS (6 WIDER & SHORTER CARDS - ALTERNATING DESIGNS) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        
+        {/* KPI 1: Today's Revenue */}
+        <div
+          onClick={() => navigate('/reports')}
+          className="bg-white p-5 rounded-2xl border-t-4 border-t-emerald-500 border-x border-b border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <TrendingUp className="w-3.5 h-3.5" />
               </span>
+              <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">Today's Revenue</span>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-              <ShoppingCart className="w-5 h-5" />
-            </div>
+            <h3 className="text-2xl font-semibold text-slate-900 mt-1.5">₹{metrics.todayRevenue.toLocaleString('en-IN')}</h3>
+            <span className="text-emerald-600 text-xs font-semibold block">+12% vs yesterday</span>
+            <p className="text-[10px] text-slate-700 font-medium">Combined store & dine-in sales</p>
           </div>
-
-          {/* Card 2: Today's Orders (Blue Accent) */}
-          <div 
-            onClick={() => navigate('/sales-history')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-blue-500 hover:bg-blue-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Today's Orders</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-blue-600 transition-colors">
-                {data.health.todayOrders} Bills
-              </h3>
-              <span className="text-[10px] font-medium text-blue-700 bg-blue-50 border border-blue-100 rounded px-2 py-0.5 uppercase inline-block">
-                Transactions
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-              <Layers className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Card 3: Today's Profit (Emerald Accent) */}
-          <div 
-            onClick={() => navigate('/reports?category=Profit %26 Loss&filter=Today')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-emerald-650 hover:bg-emerald-50/20 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Today's Profit</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-emerald-750 transition-colors">
-                ₹{data.health.todayProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </h3>
-              <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 rounded px-2 py-0.5 uppercase inline-block">
-                Net Margin
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
-              <CircleDollarSign className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Card 4: New Customers (Cyan Accent) */}
-          <div 
-            onClick={() => navigate('/customers?filter=new')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-cyan-500 hover:bg-cyan-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">New Customers</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-cyan-600 transition-colors">
-                +{data.health.todayCustomers} Members
-              </h3>
-              <span className="text-[10px] font-medium text-cyan-700 bg-cyan-50 border border-cyan-100 rounded px-2 py-0.5 uppercase inline-block">
-                Enrollments
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center shadow-sm group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300">
-              <Users className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Card 5: Inventory Valuation (Orange Accent) */}
-          <div 
-            onClick={() => navigate('/inventory')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-orange-500 hover:bg-orange-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Inventory Valuation</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-orange-600 transition-colors">
-                ₹{data.health.inventoryValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </h3>
-              <span className="text-[10px] font-medium text-orange-700 bg-orange-50 border border-orange-100 rounded px-2 py-0.5 uppercase inline-block">
-                Warehouse Value
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 border border-orange-100 flex items-center justify-center shadow-sm group-hover:bg-orange-600 group-hover:text-white transition-all duration-300">
-              <Package className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Card 6: Pending Payments (Purple Accent) */}
-          <div 
-            onClick={() => navigate('/suppliers')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-purple-500 hover:bg-purple-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Pending Payments</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-purple-600 transition-colors">
-                ₹{data.health.outstandingPayments.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </h3>
-              <span className="text-[10px] font-medium text-purple-700 bg-purple-50 border border-purple-100 rounded px-2 py-0.5 uppercase inline-block">
-                Vendor Invoices
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shadow-sm group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
-              <CircleDollarSign className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Card 7: Low Stock Products (Amber Accent) */}
-          <div 
-            onClick={() => navigate('/inventory?status=low_stock')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-amber-500 hover:bg-amber-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Low Stock Products</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-amber-600 transition-colors">
-                {data.health.lowStockProducts} Items
-              </h3>
-              <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded px-2 py-0.5 uppercase inline-block">
-                Threshold Alert
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shadow-sm group-hover:bg-amber-600 group-hover:text-white transition-all duration-300">
-              <Layers className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Card 8: Out Of Stock (Red Accent) */}
-          <div 
-            onClick={() => navigate('/inventory?status=out_of_stock')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-red-500 hover:bg-red-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Out of Stock</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-red-600 transition-colors">
-                {data.actionRequired?.outOfStockProducts || 0} Items
-              </h3>
-              <span className="text-[10px] font-medium text-red-700 bg-red-50 border border-red-100 rounded px-2 py-0.5 uppercase inline-block">
-                Empty Stock
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center shadow-sm group-hover:bg-red-600 group-hover:text-white transition-all duration-300">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          </div>
-
-          {/* Card 9: Pending Requests Badge (Amber Accent) */}
-          <div 
-            onClick={() => navigate('/restaurant/inventory-requests')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start justify-between shadow-sm hover:shadow-md hover:border-amber-500 hover:bg-amber-50/10 transition-all duration-300 group cursor-pointer hover:-translate-y-0.5"
-          >
-            <div className="space-y-3 text-left">
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Pending Requests Badge</span>
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight leading-none group-hover:text-amber-600 transition-colors">
-                Pending Requests ({pendingRequestsCount})
-              </h3>
-              <span className="text-[10px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded px-2 py-0.5 uppercase inline-block">
-                Approval Required
-              </span>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center shadow-sm group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
-              <Bell className="w-5 h-5 animate-pulse" />
-            </div>
+          <div>
+            <CustomSparkline data={[102, 108, 105, 115, 122, 128]} color="#10b981" />
           </div>
         </div>
+
+        {/* KPI 2: Today's Profit */}
+        <div
+          onClick={() => navigate('/reports')}
+          className="bg-slate-50/50 p-5 rounded-2xl border-t-4 border-t-emerald-500 border-x border-b border-slate-150 shadow-xs flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-650">
+                <Check className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">Today's Profit</span>
+            </div>
+            <h3 className="text-2xl font-semibold text-slate-900 mt-1.5">₹{metrics.todayProfit.toLocaleString('en-IN')}</h3>
+            <span className="text-emerald-700 text-xs font-semibold block">{metrics.profitMargin}% net margin</span>
+            <p className="text-[10px] text-slate-700 font-medium">Net profit margin values</p>
+          </div>
+          <div>
+            <CustomSparkline data={[52, 58, 60, 57, 63, 67]} color="#10b981" />
+          </div>
+        </div>
+
+        {/* KPI 3: Total Orders */}
+        <div
+          onClick={() => navigate('/restaurant/kitchen-dashboard')}
+          className="bg-white p-5 rounded-2xl border-t-4 border-t-blue-500 border-x border-b border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                <Utensils className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">Total Orders</span>
+            </div>
+            <h3 className="text-2xl font-semibold text-slate-900 mt-1.5">{metrics.totalOrders}</h3>
+            <span className="text-blue-700 text-xs font-semibold block">{metrics.restaurantOrders} KOTs | {metrics.retailInvoices} Bills</span>
+            <p className="text-[10px] text-slate-700 font-medium">Total customer orders generated</p>
+          </div>
+          <div>
+            <CustomSparkline data={[140, 152, 148, 160, 155, 168]} color="#3b82f6" />
+          </div>
+        </div>
+
+        {/* KPI 4: Customers Count */}
+        <div
+          onClick={() => navigate('/customers')}
+          className="bg-slate-50/50 p-5 rounded-2xl border-t-4 border-t-indigo-500 border-x border-b border-slate-150 shadow-xs flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <Users className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">Customers Count</span>
+            </div>
+            <h3 className="text-2xl font-semibold text-slate-900 mt-1.5">{metrics.customersCount} Members</h3>
+            <span className="text-indigo-700 text-xs font-semibold block">+6% new enrollments</span>
+            <p className="text-[10px] text-slate-700 font-medium">Active CRM database records</p>
+          </div>
+          <div>
+            <CustomSparkline data={[125, 130, 134, 129, 138, 142]} color="#6366f1" />
+          </div>
+        </div>
+
+        {/* KPI 5: Inventory Alerts */}
+        <div
+          onClick={() => navigate('/inventory')}
+          className="bg-white p-5 rounded-2xl border-t-4 border-t-rose-500 border-x border-b border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+                <Package className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">Inventory Alerts</span>
+            </div>
+            <h3 className="text-2xl font-semibold text-rose-700 mt-1.5">{metrics.inventoryAlerts} Low Stock</h3>
+            <span className="text-rose-700 text-xs font-semibold block">{metrics.criticalAlerts} Critical levels</span>
+            <p className="text-[10px] text-slate-700 font-medium">Ingredients below reorder levels</p>
+          </div>
+          <div>
+            <CustomSparkline data={[15, 14, 12, 13, 11, 12]} color="#f43f5e" />
+          </div>
+        </div>
+
+        {/* KPI 6: Active Employees */}
+        <div
+          onClick={() => navigate('/restaurant/employees')}
+          className="bg-slate-50/50 p-5 rounded-2xl border-t-4 border-t-orange-500 border-x border-b border-slate-150 shadow-xs flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded-full bg-orange-50 flex items-center justify-center text-orange-650">
+                <Users className="w-3.5 h-3.5" />
+              </span>
+              <span className="text-xs font-medium text-slate-700 uppercase tracking-wider">Active Employees</span>
+            </div>
+            <h3 className="text-2xl font-semibold text-slate-900 mt-1.5">{metrics.activeEmployees} Working</h3>
+            <span className="text-orange-700 text-xs font-semibold block">92% attendance today</span>
+            <p className="text-[10px] text-slate-700 font-medium">On-duty shift coverage active</p>
+          </div>
+          <div>
+            <CustomSparkline data={[25, 27, 26, 28, 27, 28]} color="#f97316" />
+          </div>
+        </div>
+
       </div>
 
-      {/* MID PANEL: CHARTS & STATS */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* SALES STATUS */}
-        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col text-left">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider">Sales Status</h3>
-              <p className="text-xs font-normal text-slate-500">Interactive performance widget</p>
+      {/* 3. BUSINESS PERFORMANCE MODULES */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Restaurant Performance Panel */}
+        <div
+          onClick={() => navigate('/restaurant/cashier-dashboard')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Utensils className="w-5 h-5 text-blue-600" />
+                <h3 className="font-semibold text-slate-900 text-lg">Restaurant Performance</h3>
+              </div>
+              <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                Live Status: Operational
+              </span>
             </div>
-            {/* Period Switcher */}
-            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0 self-start sm:self-center">
-              {(['today', 'week', 'month', 'quarter', 'year'] as const).map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setActiveTimeframe(period)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${activeTimeframe === period
-                    ? 'bg-white text-emerald-700 shadow-sm border border-slate-200/50'
-                    : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                >
-                  {period}
-                </button>
-              ))}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Revenue Today</span>
+                <h4 className="text-xl font-semibold text-slate-900">₹{metrics.restaurantRevenue.toLocaleString('en-IN')}</h4>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Today's Orders</span>
+                <h4 className="text-xl font-semibold text-slate-900">{metrics.restaurantOrders} KOTs</h4>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Seated Tables</span>
+                <h4 className="text-xl font-semibold text-slate-900">{metrics.tablesOccupied} / 20 Occupied</h4>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Active Reservations</span>
+                <h4 className="text-xl font-semibold text-slate-900">{metrics.reservedTables} Slots</h4>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
-            <div>
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Timeframe Revenue</span>
-              <strong className="text-2xl font-bold text-slate-900 block mt-0.5">
-                ₹{currentStats.revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </strong>
+          <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-5">
+            <span className="text-[11px] text-slate-700 font-semibold uppercase">Kitchen Queue: {metrics.kitchenQueue} KOTs preparing</span>
+            <CustomSparkline data={[14, 18, 16, 22, 28, 25, 34]} color="#3b82f6" />
+          </div>
+        </div>
+
+        {/* Retail Performance Panel */}
+        <div
+          onClick={() => navigate('/billing')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 text-left flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-semibold text-slate-900 text-lg">Retail Performance</h3>
+              </div>
+              <span className="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                Live Status: Active
+              </span>
             </div>
-            <div>
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Timeframe Profit</span>
-              <strong className="text-2xl font-bold text-emerald-600 block mt-0.5">
-                ₹{currentStats.profit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </strong>
-            </div>
-            <div>
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Completed Orders</span>
-              <strong className="text-2xl font-bold text-slate-900 block mt-0.5">
-                {currentStats.orderCount}
-              </strong>
-            </div>
-            <div>
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Customers Registered</span>
-              <strong className="text-2xl font-bold text-slate-900 block mt-0.5">
-                {currentStats.customerCount}
-              </strong>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Sales Today</span>
+                <h4 className="text-xl font-semibold text-slate-900">₹{metrics.retailRevenue.toLocaleString('en-IN')}</h4>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Invoices Printed</span>
+                <h4 className="text-xl font-semibold text-slate-900">{metrics.retailInvoices} invoices</h4>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">CRM Members</span>
+                <h4 className="text-xl font-semibold text-slate-900">{metrics.retailCustomers} enrolled</h4>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Products Sold</span>
+                <h4 className="text-xl font-semibold text-slate-900">{metrics.productsSold} units</h4>
+              </div>
             </div>
           </div>
 
-          <div className="h-64 w-full text-slate-700">
+          <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-5">
+            <span className="text-[11px] text-slate-700 font-semibold uppercase">Inventory Warnings: {metrics.retailLowStock} items low</span>
+            <CustomSparkline data={[10, 12, 11, 14, 16, 18, 22]} color="#6366f1" />
+          </div>
+        </div>
+
+      </div>
+
+      {/* 4. SALES ANALYTICS + BUSINESS INSIGHTS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Sales Analytics Chart (2/3 width) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-left">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+            <div>
+              <h3 className="font-semibold text-slate-900 text-lg">Sales Analysis</h3>
+              <span className="text-[10px] text-slate-700 font-semibold uppercase tracking-wider block">Interactive dual-channel revenue curves</span>
+            </div>
+            <span className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 px-2.5 py-0.5 rounded-full">Hourly trend</span>
+          </div>
+
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={currentStats.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={currentChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorSalesPremium" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#059669" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#059669" stopOpacity={0.01} />
+                  <linearGradient id="restSalesGrad2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.12} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.00} />
+                  </linearGradient>
+                  <linearGradient id="retailSalesGrad2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.12} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.00} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="date" stroke="#94a3b8" fontSize={10} fontWeight={500} tickLine={false} axisLine={false} dy={8} />
-                <YAxis stroke="#94a3b8" fontSize={10} fontWeight={500} tickLine={false} axisLine={false} dx={-8} />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={9} fontWeight={600} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={9} fontWeight={600} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}`} />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
-                      const dataPoint = payload[0].payload;
                       return (
-                        <div className="bg-slate-900 border border-slate-800 text-white rounded-xl p-3 shadow-xl space-y-1 text-xs text-left">
-                          <p className="font-bold text-[10px] text-emerald-400 uppercase tracking-widest">{label}</p>
+                        <div className="bg-slate-900 text-white rounded-lg p-2.5 shadow-md text-[10px] text-left border border-slate-800">
+                          <p className="font-semibold text-slate-300 mb-1">{label} sales</p>
                           <div className="space-y-0.5">
-                            <div className="flex justify-between gap-6">
-                              <span className="text-slate-400 font-normal">Revenue:</span>
-                              <span className="font-bold text-white">₹{dataPoint.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <div className="flex justify-between gap-4">
+                              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Restaurant:</span>
+                              <span className="font-semibold">₹{payload[0].value?.toLocaleString('en-IN')}</span>
                             </div>
-                            <div className="flex justify-between gap-6">
-                              <span className="text-slate-400 font-normal">Orders:</span>
-                              <span className="font-bold text-white">{dataPoint.orders ?? 0} Bills</span>
+                            <div className="flex justify-between gap-4">
+                              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>Retail:</span>
+                              <span className="font-semibold">₹{payload[1].value?.toLocaleString('en-IN')}</span>
                             </div>
                           </div>
                         </div>
@@ -434,253 +779,430 @@ export const Dashboard: React.FC = () => {
                     return null;
                   }}
                 />
-                <Area type="monotone" dataKey="sales" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSalesPremium)" />
+                <Legend verticalAlign="top" height={24} iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                <Area type="monotone" name="Restaurant Sales" dataKey="restaurantSales" stroke="#3b82f6" strokeWidth={1.5} fillOpacity={1} fill="url(#restSalesGrad2)" />
+                <Area type="monotone" name="Retail Sales" dataKey="retailSales" stroke="#6366f1" strokeWidth={1.5} fillOpacity={1} fill="url(#retailSalesGrad2)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* PAYMENT SUMMARY */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between text-left">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider">Payment Summary</h3>
-            <p className="text-xs font-normal text-slate-500">Payment contribution metrics (30d)</p>
+        {/* Business Insights Panel (1/3 width) */}
+        <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-left flex flex-col justify-between">
+          <div className="border-b border-slate-100 pb-3 mb-4">
+            <h3 className="font-semibold text-slate-900 text-lg">Business Insights</h3>
+            <span className="text-[10px] text-slate-700 font-semibold uppercase tracking-wider block">Executive AI strategic reviews</span>
           </div>
 
-          <div className="space-y-2 my-auto">
-            {data.paymentSummary && (
-              <>
-                <div className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition duration-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
-                      <CircleDollarSign className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-slate-800">CASH</div>
-                      <div className="text-[10px] text-slate-450 font-normal">Sales Mode</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-900">₹{data.paymentSummary.cashSales.toLocaleString('en-IN')}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition duration-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-indigo-50 text-indigo-600">
-                      <Activity className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-slate-800">UPI</div>
-                      <div className="text-[10px] text-slate-450 font-normal">UPI Transfer</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-900">₹{data.paymentSummary.upiSales.toLocaleString('en-IN')}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition duration-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-blue-50 text-blue-600">
-                      <CreditCard className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-slate-800">CARD</div>
-                      <div className="text-[10px] text-slate-450 font-normal">Card Swipe</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-slate-900">₹{data.paymentSummary.cardSales.toLocaleString('en-IN')}</div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400 font-normal text-center">
-            Updated live with transaction logs
+          <div className="space-y-3">
+            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+              <span className="text-xs font-semibold text-slate-800">Top Selling Dish:</span>
+              <strong className="text-xs font-semibold text-slate-900">Cheese Burger (24 orders)</strong>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+              <span className="text-xs font-semibold text-slate-800">Top Selling Product:</span>
+              <strong className="text-xs font-semibold text-slate-900">Amul Butter (46 units)</strong>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+              <span className="text-xs font-semibold text-slate-800">Most Profitable:</span>
+              <strong className="text-xs font-semibold text-emerald-700">Appetizers (58% margin)</strong>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+              <span className="text-xs font-semibold text-slate-800">Highest Expense:</span>
+              <strong className="text-xs font-semibold text-rose-700">Vendor Payouts (₹8,200)</strong>
+            </div>
+            <div className="flex justify-between items-center py-2 border-b border-slate-50">
+              <span className="text-xs font-semibold text-slate-800">Active Staff:</span>
+              <strong className="text-xs font-semibold text-slate-900">Rahul Sharma (58 served)</strong>
+            </div>
+            <div className="flex justify-between items-center py-2">
+              <span className="text-xs font-semibold text-slate-800">Peak hour:</span>
+              <strong className="text-xs font-semibold text-slate-900">7:00 PM - 9:00 PM</strong>
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* LOWER PANEL: TIMELINE, PERFORMANCE & STOCK */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* STORE STATUS CENTER */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm text-left flex flex-col justify-between">
-          <div>
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider">Store Status Center</h3>
-              <p className="text-xs font-normal text-slate-500">Real-time store operational health</p>
+      {/* 5. EMPLOYEE OVERVIEW + INVENTORY OVERVIEW */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Employee Overview Panel */}
+        <div 
+          onClick={() => navigate('/restaurant/employees')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-cyan-600" />
+              <h3 className="font-semibold text-slate-900 text-lg">Employee Overview</h3>
             </div>
+            <span className="text-xs font-semibold text-cyan-700">Manage Staff →</span>
+          </div>
 
-            <div className="space-y-3">
-              {[
-                { name: 'Inventory Status', score: 92, key: 'inv' },
-                { name: 'Sales Status', score: 85, key: 'sales' },
-                { name: 'Customer Activity', score: 78, key: 'cust' },
-                { name: 'Supplier Activity', score: 89, key: 'supp' },
-                { name: 'Payment Collection', score: 94, key: 'pay' }
-              ].map((item) => {
-                const status = getStatusLevel(item.score);
-                return (
-                  <div key={item.key} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-700">{item.name}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${status.dot}`}></span>
-                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border ${status.bg} ${status.text}`}>
-                          {status.label}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-500 ${status.label === 'Good' ? 'bg-emerald-500' :
-                          status.label === 'Warning' ? 'bg-amber-500' : 'bg-red-500'
-                        }`} style={{ width: `${item.score}%` }}></div>
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Working</span>
+              <strong className="text-base font-semibold text-slate-900 mt-1 block">{metrics.activeEmployees} staff</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Checked Out</span>
+              <strong className="text-base font-semibold text-slate-900 mt-1 block">{metrics.checkedOut} staff</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">On Leave</span>
+              <strong className="text-base font-semibold text-indigo-700 mt-1 block">{metrics.onLeave} staff</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Absent</span>
+              <strong className="text-base font-semibold text-rose-700 mt-1 block">{metrics.absent} staff</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Late Arrivals</span>
+              <strong className="text-base font-semibold text-amber-700 mt-1 block">{metrics.lateArrival} staff</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Attendance Rate</span>
+              <strong className="text-base font-semibold text-emerald-700 mt-1 block">92% today</strong>
             </div>
           </div>
         </div>
 
-        {/* STOCK STATUS */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm text-left flex flex-col justify-between">
-          <div>
-            <div className="mb-4">
-              <h3 className="text-sm font-black text-black uppercase tracking-wider">Stock Status</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Real-time stocks breakdown</p>
+        {/* Inventory Overview Panel */}
+        <div 
+          onClick={() => navigate('/inventory')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-rose-600" />
+              <h3 className="font-semibold text-slate-900 text-lg">Inventory Overview</h3>
             </div>
+            <span className="text-xs font-semibold text-rose-700">Open Warehouse →</span>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl">
-                <span className="text-[9px] font-black text-black uppercase block">Out of Stock</span>
-                <strong className="text-xl font-black text-red-650 block mt-0.5">{data.actionRequired?.outOfStockProducts || 0}</strong>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-2xl">
-                <span className="text-[9px] font-black text-black uppercase block">Dead Stock</span>
-                <strong className="text-xl font-black text-slate-905 block mt-0.5">2</strong>
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Low Stock</span>
+              <strong className="text-base font-semibold text-slate-900 mt-1 block">{metrics.lowStockAlerts} Items</strong>
             </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Critical Stock</span>
+              <strong className="text-base font-semibold text-rose-700 mt-1 block">{metrics.criticalAlerts} Items</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Expiring Items</span>
+              <strong className="text-base font-semibold text-amber-600 mt-1 block">2 Items</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Purchase Requests</span>
+              <strong className="text-base font-semibold text-slate-900 mt-1 block">{metrics.supplierPOs} requests</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-left col-span-2">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Stock Value</span>
+              <strong className="text-base font-semibold text-slate-900 mt-1 block">₹{metrics.todayRevenue ? '1,45,200' : '0.00'} valuation</strong>
+            </div>
+          </div>
+        </div>
 
-            <div className="space-y-2">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Fast Moving Products</span>
-              {data.topSellingProducts && data.topSellingProducts.map((prod: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center text-xs font-bold text-slate-700 py-1 border-b border-slate-50">
-                  <span className="truncate max-w-[150px]">{prod.name}</span>
-                  <span className="bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded text-[9px] font-black shrink-0">
-                    {prod.unitsSold} Sold
+      </div>
+
+      {/* 6. SUPPLIER STATUS & FINANCES PANELS */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Suppliers overview */}
+        <div 
+          onClick={() => navigate('/restaurant/suppliers')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-650" />
+              <h3 className="font-semibold text-slate-900 text-lg">Suppliers Overview</h3>
+            </div>
+            <span className="text-xs font-semibold text-indigo-700">Manage Suppliers →</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Pending Deliveries</span>
+              <strong className="text-base font-semibold text-slate-900 mt-1 block">{metrics.pendingDeliveries} PO Restocks</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">New Purchase Orders</span>
+              <strong className="text-base font-semibold text-slate-900 mt-1 block">{metrics.supplierPOs} pending POs</strong>
+            </div>
+          </div>
+        </div>
+
+        {/* Financial health */}
+        <div 
+          onClick={() => navigate('/restaurant/expense-management')}
+          className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md cursor-pointer transition-all duration-200 text-left"
+        >
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-emerald-650" />
+              <h3 className="font-semibold text-slate-900 text-lg">Finance & Payouts</h3>
+            </div>
+            <span className="text-xs font-semibold text-emerald-700">Expenses Log →</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Operating Expenses</span>
+              <strong className="text-base font-semibold text-rose-700 mt-1 block">₹{metrics.operatingExpenses.toLocaleString()}</strong>
+            </div>
+            <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+              <span className="text-[10px] text-slate-700 font-semibold uppercase block">Pending Vendor Payouts</span>
+              <strong className="text-base font-semibold text-amber-700 mt-1 block">₹{metrics.pendingPayments.toLocaleString()}</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 7. PENDING APPROVALS CARDS */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-left">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Check className="w-5 h-5 text-emerald-650" />
+            <h3 className="font-semibold text-slate-900 text-lg">Pending Approvals</h3>
+          </div>
+          <span className="bg-slate-50 border border-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+            {approvals.length} Requests
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {approvals.length === 0 ? (
+            <div className="col-span-full py-8 text-center text-slate-650 space-y-1">
+              <Check className="w-6 h-6 text-emerald-500 mx-auto" />
+              <p className="text-xs font-semibold text-slate-700">All approvals are cleared.</p>
+            </div>
+          ) : (
+            approvals.map(app => (
+              <div 
+                key={app.id} 
+                className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between gap-4 shadow-sm hover:border-slate-300 transition"
+              >
+                <div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] bg-slate-200 text-slate-800 px-2 py-0.5 rounded-md font-semibold uppercase">
+                      {app.title}
+                    </span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      app.priority === 'High' ? 'bg-rose-50 text-rose-755 border border-rose-100' :
+                      app.priority === 'Medium' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                      'bg-blue-50 text-blue-700 border border-blue-100'
+                    }`}>
+                      {app.priority}
+                    </span>
+                  </div>
+                  
+                  <strong className="text-sm font-semibold text-slate-900 block mt-3">{app.subject}</strong>
+                  
+                  <div className="flex justify-between items-center text-xs text-slate-700 mt-1.5">
+                    <span>{app.employee}</span>
+                    <span className="font-mono text-[10px]">{app.date}</span>
+                  </div>
+                </div>
+
+                {/* 2. SHOW APPROVAL ACTIONS (✅ Approve, ❌ Reject, 👁 View Details) */}
+                <div className="flex flex-col gap-2 pt-3 border-t border-slate-100/60 mt-auto">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApprovalAction(app.id, 'Approve')}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer transition-colors"
+                    >
+                      <span>✅</span> Approve
+                    </button>
+                    <button
+                      onClick={() => handleApprovalAction(app.id, 'Reject')}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer transition-colors"
+                    >
+                      <span>❌</span> Reject
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (app.type === 'leave') navigate('/restaurant/employees');
+                      else if (app.type === 'po' || app.type === 'payment') navigate('/restaurant/suppliers');
+                      else if (app.type === 'stock') navigate('/restaurant/inventory-requests');
+                      else navigate('/restaurant/expense-management');
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold cursor-pointer transition-colors"
+                  >
+                    <span>👁</span> View Details
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* 8. RECENT BUSINESS ACTIVITIES TIMELINE */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-left">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+          <h3 className="font-semibold text-slate-900 text-lg">Recent Business Activities</h3>
+          <span className="text-xs text-slate-700 font-semibold uppercase">Real-time Operations feed</span>
+        </div>
+
+        <div className="relative border-l border-slate-150 ml-3 pl-6 space-y-5">
+          {activities.map(act => (
+            <div key={act.id} className="relative group">
+              <div className="absolute -left-[31px] top-1.5 w-3.5 h-3.5 rounded-full border-4 border-white bg-slate-800 group-hover:scale-110 transition"></div>
+              
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-900 font-mono">{act.time}</span>
+                  <span className={`text-[9px] font-semibold uppercase px-2 py-0.5 rounded ${
+                    act.type === 'billing' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                    act.type === 'kitchen' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                    act.type === 'attendance' ? 'bg-cyan-50 text-cyan-700 border border-cyan-100' :
+                    act.type === 'inventory' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                    'bg-slate-50 text-slate-700 border border-slate-200'
+                  }`}>
+                    {act.type}
                   </span>
+                  <span className="text-sm font-semibold text-slate-850">{act.message}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate('/inventory')}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase py-3 rounded-2xl tracking-wider cursor-pointer mt-4 transition"
-          >
-            Review Stock Thresholds
-          </button>
-        </div>
-
-        {/* RECENT ACTIVITIES */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm text-left flex flex-col justify-between">
-          <div>
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-black text-black uppercase tracking-wider">Recent Activities</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Live operational activity stream</p>
+                <button 
+                  onClick={() => navigate(act.route)}
+                  className="text-[11px] text-slate-700 hover:text-slate-900 font-semibold flex items-center gap-0.5 cursor-pointer uppercase"
+                >
+                  <span>View</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <Clock className="w-4 h-4 text-slate-400" />
+              <p className="text-xs text-slate-700 mt-1 leading-snug">{act.detail}</p>
             </div>
-
-            <div className="relative border-l-2 border-slate-100 ml-2.5 space-y-4">
-              {data.recentActivities && data.recentActivities.map((act: any, idx: number) => (
-                <div key={idx} className="relative pl-5 text-xs text-slate-600">
-                  <span className="absolute -left-[6px] top-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white"></span>
-                  <h5 className="font-extrabold text-black">{act.message}</h5>
-                  <p className="text-[10px] font-semibold text-slate-500 mt-0.5">
-                    {new Date(act.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate('/sales-history')}
-            className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs uppercase py-3 rounded-2xl tracking-wider cursor-pointer mt-4 transition"
-          >
-            Open Operation Logs
-          </button>
+          ))}
         </div>
-
       </div>
 
-      {/* QUICK ACTIONS */}
-      <div className="space-y-3 text-left">
-        <h2 className="text-lg font-bold text-slate-950 tracking-tight block">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* 9. QUICK OPERATIONS TILES */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-left">
+        <h3 className="font-semibold text-slate-900 text-lg mb-4">Quick Operations</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          
           <div
             onClick={() => navigate('/billing')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg hover:border-emerald-500 transition-all duration-300 group cursor-pointer flex items-center gap-4 text-left"
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition shadow-sm">
-              <Plus className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">🧾</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">Open Billing Counter</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Launch retail checkout register</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-800">New Billing</h4>
-              <p className="text-xs font-normal text-slate-400 mt-0.5 uppercase">Checkout Terminal</p>
-            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
           </div>
 
           <div
-            onClick={() => navigate('/products?action=add')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg hover:border-blue-500 transition-all duration-300 group cursor-pointer flex items-center gap-4 text-left"
+            onClick={() => navigate('/restaurant/kitchen-dashboard')}
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition shadow-sm">
-              <Package className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">🍽</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">Monitor Kitchen</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Check KOTs and chef speeds</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-800">Add Product</h4>
-              <p className="text-xs font-normal text-slate-400 mt-0.5 uppercase">Stock Master</p>
-            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
           </div>
 
           <div
-            onClick={() => navigate('/customers?action=add')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg hover:border-cyan-500 transition-all duration-300 group cursor-pointer flex items-center gap-4 text-left"
+            onClick={() => navigate('/inventory')}
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 border border-cyan-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition shadow-sm">
-              <Users className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">📦</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">Manage Inventory</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Check low stock levels</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-800">Add Customer</h4>
-              <p className="text-xs font-normal text-slate-400 mt-0.5 uppercase">CRM Registration</p>
-            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
           </div>
 
           <div
-            onClick={() => navigate('/purchases?action=create')}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-lg hover:border-indigo-500 transition-all duration-300 group cursor-pointer flex items-center gap-4 text-left"
+            onClick={() => navigate('/reports')}
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition shadow-sm">
-              <Layers className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">📊</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">View Reports</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Analyze financial metrics</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-800">Create Purchase</h4>
-              <p className="text-xs font-normal text-slate-400 mt-0.5 uppercase">Procurement PO</p>
-            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
           </div>
+
+          <div
+            onClick={() => navigate('/restaurant/employees')}
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">👤</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">Employee Management</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Manage attendance & payroll</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
+          </div>
+
+          <div
+            onClick={() => navigate('/restaurant/reservations')}
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">📅</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">Reservations</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Monitor seated diner tables</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
+          </div>
+
+          <div
+            onClick={() => navigate('/restaurant/suppliers')}
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">🤝</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">Suppliers</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Manage purchase requisitions</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
+          </div>
+
+          <div
+            onClick={() => navigate('/restaurant/cashier-dashboard')}
+            className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-95 cursor-pointer transition-all duration-200 bg-slate-50/80 group"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl group-hover:scale-110 transition duration-150">🍽</span>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-slate-900">Restaurant Dashboard</h4>
+                <p className="text-[11px] text-slate-700 leading-tight">Go to main dine-in register</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition" />
+          </div>
+
         </div>
       </div>
+
     </div>
   );
 };

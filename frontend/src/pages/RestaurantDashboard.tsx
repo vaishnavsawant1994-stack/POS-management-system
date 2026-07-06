@@ -37,8 +37,7 @@ export const RestaurantDashboard: React.FC = () => {
           { name: 'Pizza', orders: 35 },
           { name: 'Starters', orders: 28 },
         ],
-        lowIngredientStock: 2,
-        pendingOnlineOrders: 3
+        lowIngredientStock: 2
       });
     } finally {
       setLoading(false);
@@ -173,7 +172,7 @@ export const RestaurantDashboard: React.FC = () => {
       </div>
 
       {/* Tables Breakdown and Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Table Status breakdown */}
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -247,61 +246,6 @@ export const RestaurantDashboard: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Online Orders Channels */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="font-extrabold text-slate-800 text-lg mb-4">Online Orders Channels</h3>
-
-          {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(n => (
-                <div key={n} className="h-16 bg-slate-100 rounded animate-pulse w-full"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="p-4 border border-slate-100 rounded-xl bg-orange-50/20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center font-extrabold text-orange-600">S</div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800">Swiggy Orders</h4>
-                    <p className="text-xs text-slate-400">15% commission rate</p>
-                  </div>
-                </div>
-                <span className="text-sm font-extrabold text-slate-700">₹{(metrics?.todaySales * 0.4)?.toFixed(2)}</span>
-              </div>
-
-              <div className="p-4 border border-slate-100 rounded-xl bg-rose-50/20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center font-extrabold text-rose-600">Z</div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800">Zomato Orders</h4>
-                    <p className="text-xs text-slate-400">18% commission rate</p>
-                  </div>
-                </div>
-                <span className="text-sm font-extrabold text-slate-700">₹{(metrics?.todaySales * 0.35)?.toFixed(2)}</span>
-              </div>
-
-              <div className="p-4 border border-slate-100 rounded-xl bg-emerald-50/20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center font-extrabold text-emerald-600">QR</div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800">Direct QR orders</h4>
-                    <p className="text-xs text-slate-400">No commission</p>
-                  </div>
-                </div>
-                <span className="text-sm font-extrabold text-slate-700">₹{(metrics?.todaySales * 0.25)?.toFixed(2)}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-4 flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Orders</span>
-            <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-              {metrics?.pendingOnlineOrders || 0} Pending Approval
-            </span>
-          </div>
         </div>
 
       </div>

@@ -31,14 +31,12 @@ import { ProductExchange } from './pages/ProductExchange.tsx';
 import { PublicInvoiceView } from './pages/PublicInvoiceView.tsx';
 
 // Restaurant Specific Pages
-import { RestaurantDashboard } from './pages/RestaurantDashboard';
 import { TableManagement } from './pages/TableManagement';
 import { KitchenDisplay } from './pages/KitchenDisplay';
 import { DigitalMenuBuilder } from './pages/DigitalMenuBuilder';
 import { EmployeeManagement } from './pages/EmployeeManagement';
 import { Reservations } from './pages/Reservations';
 import { RecipeManagement } from './pages/RecipeManagement';
-import { OnlineOrders } from './pages/OnlineOrders';
 import { RestaurantReports } from './pages/RestaurantReports';
 import { RestaurantInventory } from './pages/RestaurantInventory';
 import { KitchenDashboard } from './pages/KitchenDashboard';
@@ -46,9 +44,10 @@ import { InventoryRequests } from './pages/InventoryRequests';
 import { PublicQRMenu } from './pages/PublicQRMenu';
 import { WaiterDashboard } from './pages/WaiterDashboard';
 import { TakeOrder } from './pages/TakeOrder';
-import { GenerateBill } from './pages/GenerateBill';
+import { CashierDashboard } from './pages/CashierDashboard';
 import { Suppliers as RestaurantSuppliers } from './pages/RestaurantSuppliers';
 import { ActiveTables } from './pages/ActiveTables';
+import { ExpenseManagement } from './pages/ExpenseManagement';
 
 
 // Private Route Guard Component
@@ -99,7 +98,7 @@ const MainDashboard: React.FC = () => {
     return <KitchenDashboard />;
   }
   if (role === 'CASHIER') {
-    return <TakeOrder />;
+    return <CashierDashboard />;
   }
   if (role === 'INVENTORY') {
     return <RestaurantInventory />;
@@ -107,7 +106,7 @@ const MainDashboard: React.FC = () => {
   if (role === 'EMPLOYEE') {
     return <EmployeeManagement />;
   }
-  return <RestaurantDashboard />; // ADMIN or MANAGER
+  return <Dashboard />; // ADMIN or MANAGER
 };
 
 // Main Layout Wrapper
@@ -181,8 +180,9 @@ const DashboardLayout: React.FC = () => {
             <Route path="/restaurant/active-tables" element={<ActiveTables />} />
             <Route path="/restaurant/take-order" element={<TakeOrder />} />
             <Route path="/take-order" element={<TakeOrder />} />
-            <Route path="/restaurant/generate-bill" element={<GenerateBill />} />
-            <Route path="/generate-bill" element={<GenerateBill />} />
+            <Route path="/restaurant/generate-bill" element={<CashierDashboard />} />
+            <Route path="/generate-bill" element={<CashierDashboard />} />
+            <Route path="/restaurant/cashier-dashboard" element={<CashierDashboard />} />
             <Route path="/restaurant/tables" element={<TableManagement />} />
             <Route path="/restaurant/kitchen" element={<KitchenDisplay />} />
             <Route path="/restaurant/kitchen-dashboard" element={<KitchenDashboard />} />
@@ -191,13 +191,13 @@ const DashboardLayout: React.FC = () => {
             <Route path="/restaurant/employees" element={<EmployeeManagement />} />
             <Route path="/restaurant/reservations" element={<Reservations />} />
             <Route path="/restaurant/recipes" element={<RecipeManagement />} />
-            <Route path="/restaurant/online-orders" element={<OnlineOrders />} />
             <Route path="/restaurant/waiter-dashboard" element={<WaiterDashboard />} />
             <Route path="/restaurant/reports" element={<RestaurantReports />} />
             <Route path="/restaurant/inventory" element={<RestaurantInventory />} />
             <Route path="/restaurant/inventory-requests" element={<InventoryRequests />} />
             <Route path="/restaurant/stock-requests" element={<InventoryRequests />} />
             <Route path="/restaurant/suppliers" element={<RestaurantSuppliers />} />
+            <Route path="/restaurant/expense-management" element={<ExpenseManagement />} />
             {/* Fallback to Dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

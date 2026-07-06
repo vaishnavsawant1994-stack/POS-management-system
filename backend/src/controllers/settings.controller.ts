@@ -15,7 +15,10 @@ export const getSettings = async (req: AuthenticatedRequest, res: Response) => {
           mobile: '+91 99999 88888',
           email: 'info@societysupermarket.com',
           logo: null,
-          footerMessage: 'Thank you for visiting our store'
+          footerMessage: 'Thank you for visiting our store',
+          upiId: 'merchant@okaxis',
+          razorpayKeyId: '',
+          razorpaySecret: ''
         }
       });
     }
@@ -49,7 +52,10 @@ export const updateSettings = async (req: AuthenticatedRequest, res: Response) =
     smtpUsername,
     smtpPassword,
     ownerName,
-    autoOpenPrintPreview
+    autoOpenPrintPreview,
+    upiId,
+    razorpayKeyId,
+    razorpaySecret
   } = req.body;
   try {
     const existing = await prisma.shopSettings.findFirst();
@@ -80,7 +86,10 @@ export const updateSettings = async (req: AuthenticatedRequest, res: Response) =
           smtpUsername,
           smtpPassword,
           ownerName,
-          autoOpenPrintPreview: autoOpenPrintPreview !== undefined ? Boolean(autoOpenPrintPreview) : undefined
+          autoOpenPrintPreview: autoOpenPrintPreview !== undefined ? Boolean(autoOpenPrintPreview) : undefined,
+          upiId,
+          razorpayKeyId,
+          razorpaySecret
         }
       });
     } else {
@@ -107,7 +116,10 @@ export const updateSettings = async (req: AuthenticatedRequest, res: Response) =
           smtpUsername,
           smtpPassword,
           ownerName,
-          autoOpenPrintPreview: Boolean(autoOpenPrintPreview)
+          autoOpenPrintPreview: Boolean(autoOpenPrintPreview),
+          upiId,
+          razorpayKeyId,
+          razorpaySecret
         }
       });
     }

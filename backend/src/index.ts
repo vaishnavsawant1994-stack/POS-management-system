@@ -30,6 +30,7 @@ import exchangeRoutes from './routes/exchange.routes';
 import settingsRoutes from './routes/settings.routes';
 import publicInvoiceRoutes from './routes/publicInvoice.routes';
 import restaurantRoutes from './routes/restaurant.routes';
+import expenseRoutes from './routes/expense.routes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -67,6 +68,7 @@ app.use('/api/exchange', exchangeRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/public-invoice', publicInvoiceRoutes);
 app.use('/api/restaurant', restaurantRoutes);
+app.use('/api/expenses', expenseRoutes);
 
 
 // Global Error Handler

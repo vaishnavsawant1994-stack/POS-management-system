@@ -48,6 +48,8 @@ import { CashierDashboard } from './pages/CashierDashboard';
 import { Suppliers as RestaurantSuppliers } from './pages/RestaurantSuppliers';
 import { ActiveTables } from './pages/ActiveTables';
 import { ExpenseManagement } from './pages/ExpenseManagement';
+import { HousekeepingDashboard } from './pages/HousekeepingDashboard';
+
 
 
 // Private Route Guard Component
@@ -76,10 +78,16 @@ export const getEffectiveRole = (user: any) => {
     if (r.includes('kitchen') || r.includes('helper')) return 'KITCHEN';
     if (r.includes('inventory') || r.includes('keeper')) return 'INVENTORY';
     if (r.includes('cashier') || r.includes('billing')) return 'CASHIER';
+    if (r.includes('housekeeping') || r.includes('cleaner')) return 'HOUSEKEEPING';
     return 'EMPLOYEE';
+  }
+  if (user.role) {
+    const r = user.role.toLowerCase();
+    if (r.includes('housekeeping') || r.includes('cleaner')) return 'HOUSEKEEPING';
   }
   return user.role;
 };
+
 
 const MainDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -102,6 +110,9 @@ const MainDashboard: React.FC = () => {
   }
   if (role === 'INVENTORY') {
     return <RestaurantInventory />;
+  }
+  if (role === 'HOUSEKEEPING') {
+    return <HousekeepingDashboard />;
   }
   if (role === 'EMPLOYEE') {
     return <EmployeeManagement />;
@@ -198,6 +209,7 @@ const DashboardLayout: React.FC = () => {
             <Route path="/restaurant/stock-requests" element={<InventoryRequests />} />
             <Route path="/restaurant/suppliers" element={<RestaurantSuppliers />} />
             <Route path="/restaurant/expense-management" element={<ExpenseManagement />} />
+            <Route path="/restaurant/housekeeping" element={<HousekeepingDashboard />} />
             {/* Fallback to Dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -18,7 +18,8 @@ import {
   History,
   RotateCcw,
   RefreshCw,
-  Receipt
+  Receipt,
+  Brush
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,7 +39,12 @@ const getEffectiveRole = (user: any) => {
     if (r.includes('kitchen') || r.includes('helper')) return 'KITCHEN';
     if (r.includes('inventory') || r.includes('keeper')) return 'INVENTORY';
     if (r.includes('cashier') || r.includes('billing')) return 'CASHIER';
+    if (r.includes('housekeeping') || r.includes('cleaner')) return 'HOUSEKEEPING';
     return 'EMPLOYEE';
+  }
+  if (user.role) {
+    const r = user.role.toLowerCase();
+    if (r.includes('housekeeping') || r.includes('cleaner')) return 'HOUSEKEEPING';
   }
   return user.role;
 };
@@ -93,6 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { name: 'Inventory', path: '/restaurant/inventory', icon: Archive },
     { name: 'Suppliers', path: '/restaurant/suppliers', icon: Users },
     { name: 'Expense Management', path: '/restaurant/expense-management', icon: Receipt },
+    { name: 'Housekeeping', path: '/restaurant/housekeeping', icon: Brush },
     { name: 'Restaurant Reports', path: '/restaurant/reports', icon: BarChart2 },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
@@ -142,6 +149,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { name: 'Inventory', path: '/restaurant/inventory', icon: Archive },
         { name: 'Suppliers', path: '/restaurant/suppliers', icon: Users },
         { name: 'Inventory Requests', path: '/restaurant/inventory-requests', icon: FileText },
+        { name: 'Self Service', path: '/restaurant/employees', icon: Users },
+      ];
+    }
+
+    if (role === 'HOUSEKEEPING') {
+      return [
+        { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'Self Service', path: '/restaurant/employees', icon: Users },
       ];
     }
